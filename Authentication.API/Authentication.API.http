@@ -1,0 +1,68 @@
+@Authentication.API_HostAddress = http://localhost:5033
+@token = REPLACE_AFTER_LOGIN
+
+### Register a new user (Admin / ClinicalTrialManager / Investigator / Patient / RegulatoryOfficer / DataManager)
+POST {{Authentication.API_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane.doe@lifetrack.dev",
+  "password": "Sup3rStrongP@ss!",
+  "role": "Admin",
+  "phone": "+1-555-0100"
+}
+
+### Login
+POST {{Authentication.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "jane.doe@lifetrack.dev",
+  "password": "Sup3rStrongP@ss!"
+}
+
+### Current user (requires JWT)
+GET {{Authentication.API_HostAddress}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### Change password (requires JWT)
+POST {{Authentication.API_HostAddress}}/api/auth/change-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Sup3rStrongP@ss!",
+  "newPassword": "EvenStr0nger#Pass"
+}
+
+### List users (Admin only)
+GET {{Authentication.API_HostAddress}}/api/users?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### Get user by id
+GET {{Authentication.API_HostAddress}}/api/users/1
+Authorization: Bearer {{token}}
+
+### Update user (Admin only)
+PUT {{Authentication.API_HostAddress}}/api/users/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "role": "ClinicalTrialManager",
+  "phone": "+1-555-0100"
+}
+
+### Delete user (Admin only — soft delete)
+DELETE {{Authentication.API_HostAddress}}/api/users/2
+Authorization: Bearer {{token}}
+
+### Audit logs (Admin / RegulatoryOfficer)
+GET {{Authentication.API_HostAddress}}/api/audit-logs?skip=0&take=100
+Authorization: Bearer {{token}}
+
+### Audit logs filtered by user
+GET {{Authentication.API_HostAddress}}/api/audit-logs?userId=1&skip=0&take=100
+Authorization: Bearer {{token}}

@@ -1,0 +1,29 @@
+/* .patient-banner, .profile-grid-2, .profile-item, .profile-label, .profile-value
+   are all defined in global styles.css */
+
+/* ── No-record alert ─────────────────────────────────────────────────────── */
+.alert-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #3b82f6;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 13.5px;
+  color: #1d4ed8;
+  margin-bottom: 24px;
+}
+
+/* ── Full-width panel (Adverse Events row) ───────────────────────────────── */
+.panel-full-row {
+  margin-bottom: 24px;
+}
+
+/* ── mono value ──────────────────────────────────────────────────────────── */
+.profile-value.mono {
+  font-family: 'Courier New', monospace;
+  color: #475569;
+  font-size: 13px;
+}

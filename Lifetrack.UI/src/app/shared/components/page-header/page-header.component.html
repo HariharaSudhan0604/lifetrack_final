@@ -1,0 +1,11 @@
+<div class="page-header">
+  <div class="ph-left">
+    <button class="btn-back" (click)="onBack()">&#8592; Back</button>
+    <div class="ph-titles">
+      <h1 class="page-title">{{ title }}</h1>
+      <p class="page-subtitle" *ngIf="subtitle">{{ subtitle }}</p>
+    </div>
+  </div>
+  <!-- right-side action buttons (optional) -->
+  <ng-content></ng-content>
+</div>

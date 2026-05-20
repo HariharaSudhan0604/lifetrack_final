@@ -1,0 +1,155 @@
+<div class="auth-wrapper">
+
+  <!-- Left brand panel -->
+  <div class="brand-panel">
+    <div class="brand-content">
+      <div class="brand-logo">
+        <span class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+      </div>
+      <h1 class="brand-title">LifeTrack</h1>
+      <p class="brand-subtitle">Clinical Trial Management System</p>
+      <div class="brand-divider"></div>
+      <p class="brand-desc">
+        Join LifeTrack as a clinical trial participant. Your health data
+        is securely managed and only accessible to your care team.
+      </p>
+      <div class="brand-badges">
+        <span class="badge"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg> Secure &amp; Private</span>
+        <span class="badge"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg> HIPAA Compliant</span>
+        <span class="badge"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg> 24/7 Support</span>
+      </div>
+    </div>
+    <div class="brand-footer">
+      <p>Trusted by leading research institutions</p>
+    </div>
+  </div>
+
+  <!-- Right register panel -->
+  <div class="register-panel">
+    <div class="register-card">
+
+      <div class="register-header">
+        <h2>Create Patient Account</h2>
+        <p>Register to join a clinical trial</p>
+      </div>
+
+      <!-- Error alert -->
+      <div class="alert-error" *ngIf="error">
+        <span class="alert-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+        {{ error }}
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <!-- Full Name -->
+        <div class="form-group">
+          <label for="reg-name">Full Name</label>
+          <div class="input-wrapper">
+            <span class="input-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <input
+              id="reg-name"
+              type="text"
+              formControlName="name"
+              placeholder="Your full name"
+              autocomplete="name"
+              [class.is-invalid]="name.invalid && name.touched" />
+          </div>
+          <div class="field-error" *ngIf="name.touched && name.hasError('required')">Name is required.</div>
+          <div class="field-error" *ngIf="name.touched && name.hasError('minlength')">Name must be at least 2 characters.</div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="reg-email">Email Address</label>
+          <div class="input-wrapper">
+            <span class="input-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+            <input
+              id="reg-email"
+              type="email"
+              formControlName="email"
+              placeholder="you@example.com"
+              autocomplete="email"
+              [class.is-invalid]="email.invalid && email.touched" />
+          </div>
+          <div class="field-error" *ngIf="email.touched && email.hasError('required')">Email is required.</div>
+          <div class="field-error" *ngIf="email.touched && email.hasError('email')">Enter a valid email address.</div>
+        </div>
+
+        <!-- Date of Birth -->
+        <div class="form-group">
+          <label for="reg-dob">Date of Birth</label>
+          <input
+            id="reg-dob"
+            type="date"
+            class="input-date"
+            formControlName="dob"
+            [max]="today"
+            [class.is-invalid]="dob.invalid && dob.touched" />
+          <div class="field-error" *ngIf="dob.touched && dob.hasError('required')">Date of birth is required.</div>
+        </div>
+
+        <!-- Phone (optional) -->
+        <div class="form-group">
+          <label for="reg-phone">Phone <span class="optional-label">(optional)</span></label>
+          <div class="input-wrapper">
+            <span class="input-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.29 6.29l1.1-.9a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+            <input
+              id="reg-phone"
+              type="tel"
+              formControlName="phone"
+              placeholder="+1-555-0100"
+              autocomplete="tel" />
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="reg-password">Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input
+              id="reg-password"
+              [type]="showPass ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="Minimum 8 characters"
+              autocomplete="new-password"
+              [class.is-invalid]="password.invalid && password.touched" />
+            <button type="button" class="toggle-pass" (click)="togglePass()">{{ showPass ? 'Hide' : 'Show' }}</button>
+          </div>
+          <div class="field-error" *ngIf="password.touched && password.hasError('required')">Password is required.</div>
+          <div class="field-error" *ngIf="password.touched && password.hasError('minlength')">Password must be at least 8 characters.</div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label for="reg-confirm">Confirm Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input
+              id="reg-confirm"
+              [type]="showPass2 ? 'text' : 'password'"
+              formControlName="confirm"
+              placeholder="Re-enter your password"
+              autocomplete="new-password"
+              [class.is-invalid]="confirm.touched && (confirm.hasError('required') || form.hasError('mismatch'))" />
+            <button type="button" class="toggle-pass" (click)="togglePass2()">{{ showPass2 ? 'Hide' : 'Show' }}</button>
+          </div>
+          <div class="field-error" *ngIf="confirmError">{{ confirmError }}</div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-register" [disabled]="loading">
+          <span class="spinner" *ngIf="loading"></span>
+          <span>{{ loading ? 'Creating account…' : 'Create Account' }}</span>
+        </button>
+
+      </form>
+
+      <div class="register-footer">
+        <p>Already have an account? <a routerLink="/auth/login" class="link">Sign in here</a></p>
+      </div>
+
+    </div>
+  </div>
+
+</div>

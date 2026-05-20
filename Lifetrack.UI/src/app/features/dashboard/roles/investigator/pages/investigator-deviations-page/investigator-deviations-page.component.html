@@ -1,0 +1,193 @@
+<div class="page-wrapper">
+  <!-- Page Header -->
+  <div class="page-header">
+    <button class="back-btn" (click)="goBack()">&#8592; Back</button>
+    <div class="header-content">
+      <div class="header-text">
+        <h1 class="page-title">Protocol Deviations</h1>
+        <p class="page-subtitle">Report deviations observed at your assigned sites</p>
+      </div>
+      <button class="btn-primary" (click)="openModal()">+ Report Deviation</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-box" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading deviations...</p>
+  </div>
+
+  <!-- Content -->
+  <div class="table-card" *ngIf="!loading">
+    <table class="data-table" *ngIf="filteredDeviations.length > 0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Protocol</th>
+          <th>Site</th>
+          <th>Description</th>
+          <th>Severity</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of filteredDeviations; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ protocolMap[siteProtocolMap[d.siteProtocolID]?.protocolID] || d.siteProtocolID }}</td>
+          <td>{{ siteMap[siteProtocolMap[d.siteProtocolID]?.siteID] || '—' }}</td>
+          <td class="description-cell">{{ d.description }}</td>
+          <td><span class="badge" [ngClass]="severityClass(d.severity)">{{ d.severity }}</span></td>
+          <td><span class="badge" [ngClass]="statusClass(d.status)">{{ d.status }}</span></td>
+          <td><button class="btn-edit" (click)="openEditModal(d)"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="filteredDeviations.length === 0">
+      <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <h3>No Deviations Found</h3>
+      <p>No protocol deviations have been reported at your assigned sites yet. Use the "Report Deviation" button to log a new deviation.</p>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Edit Deviation</h2>
+        <button class="modal-close" (click)="closeEditModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-success" *ngIf="editSuccess">{{ editSuccess }}</div>
+        <div class="alert alert-error"   *ngIf="editError">{{ editError }}</div>
+
+        <!-- Read-only context -->
+        <div class="context-row" *ngIf="editingDev">
+          <div>
+            <span class="ctx-label">Protocol</span>
+            <span class="ctx-val">{{ protocolName(editingDev) }}</span>
+          </div>
+          <div>
+            <span class="ctx-label">Site</span>
+            <span class="ctx-val">{{ siteName(editingDev) }}</span>
+          </div>
+        </div>
+
+        <form (ngSubmit)="submitEdit()">
+          <div class="form-group">
+            <label>Description <span class="required">*</span></label>
+            <textarea [(ngModel)]="editForm.description" name="editDescription" rows="4"
+              placeholder="Describe the deviation (min 10 characters)..."
+              [class.input-err]="editFormErrors['description']"></textarea>
+            <span class="err-msg" *ngIf="editFormErrors['description']">{{ editFormErrors['description'] }}</span>
+            <span class="field-hint" *ngIf="!editFormErrors['description'] && editForm.description.length > 0">
+              {{ editForm.description.length }}/1000
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label>Severity <span class="required">*</span></label>
+            <select [(ngModel)]="editForm.severity" name="editSeverity"
+              [class.input-err]="editFormErrors['severity']">
+              <option value="">-- Select Severity --</option>
+              <option *ngFor="let s of editSeverities" [value]="s">{{ s }}</option>
+            </select>
+            <span class="err-msg" *ngIf="editFormErrors['severity']">{{ editFormErrors['severity'] }}</span>
+          </div>
+
+          <div class="form-group">
+            <label>Status <span class="required">*</span></label>
+            <select [(ngModel)]="editForm.status" name="editStatus"
+              [class.input-err]="editFormErrors['status']">
+              <option value="">-- Select Status --</option>
+              <option *ngFor="let s of editStatuses" [value]="s">{{ s }}</option>
+            </select>
+            <span class="err-msg" *ngIf="editFormErrors['status']">{{ editFormErrors['status'] }}</span>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" (click)="closeEditModal()" [disabled]="editSubmitting">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="editSubmitting">
+              {{ editSubmitting ? 'Saving…' : 'Save Changes' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Deviation Modal -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Report Deviation</h2>
+        <button class="modal-close" (click)="closeModal()">&#10005;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+        <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+
+        <form (ngSubmit)="submitDeviation()">
+          <div class="form-group">
+            <label for="siteProtocolID">Site Protocol <span class="required">*</span></label>
+            <select id="siteProtocolID" [(ngModel)]="form.siteProtocolID" name="siteProtocolID"
+              [class.input-err]="formErrors['siteProtocolID']">
+              <option value="">-- Select Site Protocol --</option>
+              <option *ngFor="let sp of siteProtocols" [value]="sp.siteProtocolID">
+                {{ protocolMap[sp.protocolID] || sp.protocolID }} &#64; {{ siteMap[sp.siteID] || sp.siteID }}
+              </option>
+            </select>
+            <span class="err-msg" *ngIf="formErrors['siteProtocolID']">{{ formErrors['siteProtocolID'] }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description <span class="required">*</span></label>
+            <textarea id="description" [(ngModel)]="form.description" name="description" rows="4"
+              placeholder="Describe the deviation (min 10 characters)..."
+              [class.input-err]="formErrors['description']"></textarea>
+            <span class="err-msg" *ngIf="formErrors['description']">{{ formErrors['description'] }}</span>
+            <span class="field-hint" *ngIf="!formErrors['description'] && form.description.length > 0">
+              {{ form.description.length }}/1000
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label for="severity">Severity <span class="required">*</span></label>
+            <select id="severity" [(ngModel)]="form.severity" name="severity"
+              [class.input-err]="formErrors['severity']">
+              <option value="">-- Select Severity --</option>
+              <option value="Minor">Minor</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Major">Major</option>
+              <option value="Critical">Critical</option>
+            </select>
+            <span class="err-msg" *ngIf="formErrors['severity']">{{ formErrors['severity'] }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="status">Status <span class="required">*</span></label>
+            <select id="status" [(ngModel)]="form.status" name="status"
+              [class.input-err]="formErrors['status']">
+              <option value="">-- Select Status --</option>
+              <option value="Open">Open</option>
+              <option value="Under Review">Under Review</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+            <span class="err-msg" *ngIf="formErrors['status']">{{ formErrors['status'] }}</span>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" (click)="closeModal()" [disabled]="submitting">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="submitting">
+              <span *ngIf="submitting">Submitting...</span>
+              <span *ngIf="!submitting">Submit</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

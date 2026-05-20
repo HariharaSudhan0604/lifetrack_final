@@ -1,0 +1,16 @@
+<ng-container [ngSwitch]="user?.role">
+  <app-admin-dashboard        *ngSwitchCase="'Admin'"                [user]="user!"></app-admin-dashboard>
+  <app-ctm-dashboard          *ngSwitchCase="'ClinicalTrialManager'" [user]="user!"></app-ctm-dashboard>
+  <app-investigator-dashboard *ngSwitchCase="'Investigator'"         [user]="user!"></app-investigator-dashboard>
+  <app-data-manager-dashboard *ngSwitchCase="'DataManager'"          [user]="user!"></app-data-manager-dashboard>
+  <app-regulatory-dashboard   *ngSwitchCase="'RegulatoryOfficer'"    [user]="user!"></app-regulatory-dashboard>
+  <app-patient-dashboard      *ngSwitchCase="'Patient'"              [user]="user!"></app-patient-dashboard>
+  <div *ngSwitchDefault class="main-content">
+    <div class="welcome-banner" style="background: linear-gradient(135deg, #0a1f44, #0f3460);">
+      <div class="welcome-text">
+        <h1>Welcome, {{ user?.name }}</h1>
+        <p>{{ user?.role }} &nbsp;·&nbsp; {{ user?.email }}</p>
+      </div>
+    </div>
+  </div>
+</ng-container>

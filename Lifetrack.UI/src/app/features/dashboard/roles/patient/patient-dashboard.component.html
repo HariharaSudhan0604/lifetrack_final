@@ -1,0 +1,204 @@
+<main class="main-content">
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner patient-banner">
+    <div class="welcome-text">
+      <h1>Welcome, {{ firstName }}</h1>
+      <p>Clinical Trial Participant &nbsp;·&nbsp; {{ user?.email }}</p>
+    </div>
+  </div>
+
+  <!-- No Patient Record Warning -->
+  <div class="alert-info" *ngIf="!loading && noPatientRecord">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    Your account is not yet linked to a patient record. Please contact the trial coordinator.
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid" *ngIf="!noPatientRecord">
+    <div class="stat-card">
+      <div class="stat-icon green"><span class="icon-label">EN</span></div>
+      <div class="stat-body">
+        <p class="stat-label">My Enrollments</p>
+        <h3 class="stat-value">{{ loading ? '...' : statsEnrollments }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon teal"><span class="icon-label">AC</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Active Trials</p>
+        <h3 class="stat-value">{{ loading ? '...' : statsActiveEnrollments }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue"><span class="icon-label">VS</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Upcoming Visits</p>
+        <h3 class="stat-value">{{ detailsLoading ? '...' : statsUpcomingVisits }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon amber"><span class="icon-label">NT</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Notifications</p>
+        <h3 class="stat-value">{{ loading ? '...' : statsNotifications }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 1: My Enrollments + Account Details -->
+  <div class="content-grid wide" *ngIf="!noPatientRecord">
+
+    <!-- My Enrollments -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">My Trial Enrollments</h3>
+        <span class="panel-badge">{{ enrollments.length }} enrollment{{ enrollments.length !== 1 ? 's' : '' }}</span>
+      </div>
+      <div *ngIf="detailsLoading" class="loading-state"><div class="spinner"></div></div>
+      <div *ngIf="!detailsLoading && enrollments.length === 0" class="empty-state">
+        <p>You have not been enrolled in any trials yet.<br>Your coordinator will add you when ready.</p>
+      </div>
+      <div class="data-list" *ngIf="!detailsLoading && enrollments.length > 0">
+        <div class="data-item" *ngFor="let e of enrollments">
+          <div class="data-item-dot pt-dot"></div>
+          <div class="data-item-body">
+            <p class="data-item-title">{{ protocolName(e.siteProtocolID) }}</p>
+            <p class="data-item-sub">
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   style="vertical-align:middle;margin-right:2px">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+              {{ siteName(e.siteProtocolID) }}
+              &nbsp;·&nbsp; Enrolled {{ e.enrollmentDate | date:'MMM d, y' }}
+              <ng-container *ngIf="e.consentDate">
+                &nbsp;·&nbsp; Consent {{ e.consentDate | date:'MMM d, y' }}
+              </ng-container>
+            </p>
+          </div>
+          <span class="badge" [ngClass]="enrollmentStatusClass(e.status)">{{ e.status }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account Details -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Account Details</h3>
+      </div>
+      <div *ngIf="loading" class="loading-state"><div class="spinner"></div></div>
+      <div class="profile-grid-2" *ngIf="!loading">
+        <div class="profile-item">
+          <span class="profile-label">Full Name</span>
+          <span class="profile-value">{{ user?.name ?? '—' }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Email</span>
+          <span class="profile-value">{{ user?.email ?? '—' }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Date of Birth</span>
+          <span class="profile-value">{{ formattedDOB }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Contact</span>
+          <span class="profile-value">{{ patientRecord?.contactInfo || '—' }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Patient ID</span>
+          <span class="profile-value mono">#{{ patientRecord?.patientID }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Trial Status</span>
+          <span class="badge" [ngClass]="enrollmentStatusClass(patientRecord?.enrollmentStatus)">
+            {{ patientRecord?.enrollmentStatus ?? '—' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 2: Upcoming Visits + Adverse Events -->
+  <div class="content-grid" *ngIf="!noPatientRecord">
+
+    <!-- Upcoming Visits -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Upcoming Visits</h3>
+        <span class="panel-badge">Scheduled</span>
+      </div>
+      <div *ngIf="detailsLoading" class="loading-state"><div class="spinner"></div></div>
+      <div *ngIf="!detailsLoading && upcomingVisits.length === 0" class="empty-state">
+        <p>No upcoming visits scheduled.</p>
+      </div>
+      <div class="data-list" *ngIf="!detailsLoading && upcomingVisits.length > 0">
+        <div class="data-item" *ngFor="let v of upcomingVisits">
+          <div class="data-item-dot nt-dot"></div>
+          <div class="data-item-body">
+            <p class="data-item-title">{{ visitProtocolName(v.enrollmentID) }}</p>
+            <p class="data-item-sub">
+              {{ v.visitDate | date:'EEE, MMM d, y' }}
+              <ng-container *ngIf="v.notes"> &nbsp;·&nbsp; {{ v.notes | slice:0:60 }}{{ v.notes.length > 60 ? '…' : '' }}</ng-container>
+            </p>
+          </div>
+          <span class="badge" [ngClass]="visitStatusClass(v.status)">{{ v.status }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Notifications -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">My Notifications</h3>
+        <span class="panel-badge">Latest 6</span>
+      </div>
+      <div *ngIf="loading" class="loading-state"><div class="spinner"></div></div>
+      <div *ngIf="!loading && notifications.length === 0" class="empty-state">
+        <p>No notifications yet.</p>
+      </div>
+      <div *ngIf="!loading && notifications.length > 0">
+        <div class="notif-item" *ngFor="let n of notifications">
+          <div class="notif-dot" [class.read]="n.status === 'Read'"></div>
+          <div>
+            <p class="notif-text">{{ n.message }}</p>
+            <p class="notif-time">{{ n.category }} &nbsp;·&nbsp; {{ n.createdDate | date:'MMM d, y' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 3: Adverse Events (full width) -->
+  <div class="panel panel-full-row" *ngIf="!noPatientRecord">
+    <div class="panel-header">
+      <h3 class="panel-title">My Adverse Events</h3>
+      <span class="panel-badge">{{ adverseEvents.length }} record{{ adverseEvents.length !== 1 ? 's' : '' }}</span>
+    </div>
+    <div *ngIf="detailsLoading" class="loading-state"><div class="spinner"></div></div>
+    <div *ngIf="!detailsLoading && adverseEvents.length === 0" class="empty-state">
+      <p>No adverse events on record.</p>
+    </div>
+    <div class="data-list" *ngIf="!detailsLoading && adverseEvents.length > 0">
+      <div class="data-item" *ngFor="let ae of adverseEvents">
+        <div class="data-item-dot ae-dot"></div>
+        <div class="data-item-body">
+          <p class="data-item-title">{{ ae.description ?? '—' }}</p>
+          <p class="data-item-sub">Reported {{ ae.reportedDate | date:'MMM d, y' }}</p>
+        </div>
+        <div class="badge-stack">
+          <span class="badge" [ngClass]="aeSeverityClass(ae.severity)">{{ ae.severity }}</span>
+          <span class="badge" [ngClass]="aeStatusClass(ae.status)">{{ ae.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>

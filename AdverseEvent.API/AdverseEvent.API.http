@@ -1,0 +1,119 @@
+@AdverseEvent.API_HostAddress = http://localhost:5159
+@token = REPLACE_WITH_JWT_FROM_AUTH_LOGIN
+
+### ── Adverse Events ─────────────────────────────────────────────────────────
+
+### List all adverse events
+GET {{AdverseEvent.API_HostAddress}}/api/adverse-events?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### Filter by protocol and severity
+GET {{AdverseEvent.API_HostAddress}}/api/adverse-events?protocolId=1&severity=Severe
+Authorization: Bearer {{token}}
+
+### Filter by status
+GET {{AdverseEvent.API_HostAddress}}/api/adverse-events?status=UnderReview
+Authorization: Bearer {{token}}
+
+### Get adverse event by id
+GET {{AdverseEvent.API_HostAddress}}/api/adverse-events/1
+Authorization: Bearer {{token}}
+
+### Report a new adverse event
+POST {{AdverseEvent.API_HostAddress}}/api/adverse-events
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 1,
+  "protocolId": 1,
+  "siteId": 1,
+  "reportedByUserId": 3,
+  "severity": "Moderate",
+  "category": "Gastrointestinal",
+  "description": "Patient reported nausea and vomiting 48h post-dose.",
+  "occurredAt": "2026-07-10T14:00:00Z",
+  "reportedAt": "2026-07-11T09:00:00Z"
+}
+
+### Update adverse event (e.g. move to UnderReview)
+PUT {{AdverseEvent.API_HostAddress}}/api/adverse-events/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "severity": "Moderate",
+  "category": "Gastrointestinal",
+  "description": "Patient reported nausea and vomiting 48h post-dose.",
+  "occurredAt": "2026-07-10T14:00:00Z",
+  "reportedAt": "2026-07-11T09:00:00Z",
+  "status": "UnderReview",
+  "resolution": null
+}
+
+### Resolve an adverse event
+PUT {{AdverseEvent.API_HostAddress}}/api/adverse-events/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "severity": "Moderate",
+  "category": "Gastrointestinal",
+  "description": "Patient reported nausea and vomiting 48h post-dose.",
+  "occurredAt": "2026-07-10T14:00:00Z",
+  "reportedAt": "2026-07-11T09:00:00Z",
+  "status": "Resolved",
+  "resolution": "Symptoms resolved within 72h. No dose adjustment required."
+}
+
+### Soft-delete adverse event (Admin only)
+DELETE {{AdverseEvent.API_HostAddress}}/api/adverse-events/1
+Authorization: Bearer {{token}}
+
+### ── Deviations ──────────────────────────────────────────────────────────────
+
+### List all deviations
+GET {{AdverseEvent.API_HostAddress}}/api/deviations?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### Filter deviations by protocol and type
+GET {{AdverseEvent.API_HostAddress}}/api/deviations?protocolId=1&type=Major
+Authorization: Bearer {{token}}
+
+### Get deviation by id
+GET {{AdverseEvent.API_HostAddress}}/api/deviations/1
+Authorization: Bearer {{token}}
+
+### Report a new deviation
+POST {{AdverseEvent.API_HostAddress}}/api/deviations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 1,
+  "protocolId": 1,
+  "siteId": 1,
+  "reportedByUserId": 3,
+  "type": "Minor",
+  "description": "Visit window exceeded by 3 days due to patient scheduling conflict.",
+  "occurredAt": "2026-07-08T00:00:00Z",
+  "reportedAt": "2026-07-11T10:00:00Z"
+}
+
+### Update deviation
+PUT {{AdverseEvent.API_HostAddress}}/api/deviations/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "Minor",
+  "description": "Visit window exceeded by 3 days due to patient scheduling conflict.",
+  "occurredAt": "2026-07-08T00:00:00Z",
+  "reportedAt": "2026-07-11T10:00:00Z",
+  "status": "Resolved",
+  "correctiveAction": "Patient rescheduling SOP updated to include 48h buffer reminder."
+}
+
+### Soft-delete deviation (Admin only)
+DELETE {{AdverseEvent.API_HostAddress}}/api/deviations/1
+Authorization: Bearer {{token}}

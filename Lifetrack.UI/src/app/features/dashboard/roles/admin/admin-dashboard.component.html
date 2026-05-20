@@ -1,0 +1,182 @@
+<main class="main-content">
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner admin-banner">
+    <div class="welcome-text">
+      <h1>Welcome back, {{ firstName }}</h1>
+      <p>System Administrator &nbsp;·&nbsp; Platform configuration, users &amp; integrations</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon purple"><span class="icon-label">US</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Total Users</p>
+        <h3 class="stat-value">{{ loading ? '...' : users }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue"><span class="icon-label">PR</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Protocols</p>
+        <h3 class="stat-value">{{ loading ? '...' : protocols }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon teal"><span class="icon-label">PT</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Patients</p>
+        <h3 class="stat-value">{{ loading ? '...' : patients }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><span class="icon-label">ST</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Sites</p>
+        <h3 class="stat-value">{{ loading ? '...' : sites }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-grid wide">
+
+    <!-- Recent AEs -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Recent Adverse Events</h3>
+        <span class="panel-badge">Latest 6</span>
+      </div>
+      <div *ngIf="loading" class="loading-state"><div class="spinner"></div></div>
+      <div *ngIf="!loading && recentAEs.length === 0" class="empty-state"><p>No adverse events on record</p></div>
+      <div class="ae-list" *ngIf="!loading && recentAEs.length > 0">
+        <div class="ae-row" *ngFor="let ae of recentAEs">
+          <div class="ae-row-main">
+            <span class="ae-desc">{{ ae.description ?? '—' }}</span>
+            <span class="ae-meta">P#{{ ae.patientID }} · {{ ae.reportedDate | date:'MMM d, y' }}</span>
+          </div>
+          <div class="ae-row-right">
+            <span class="badge" [ngClass]="severityClass(ae.severity)">{{ ae.severity }}</span>
+            <span class="badge" [ngClass]="statusClass(ae.status)">{{ ae.status }}</span>
+            <button class="btn-view-detail" (click)="openAEDetail(ae)">View</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Quick Actions</h3>
+      </div>
+      <div class="action-grid">
+        <button class="action-btn" (click)="manageUsers()">
+          <span class="action-btn-label">Manage Users</span>
+          <span class="action-btn-sub">Roles &amp; accounts</span>
+        </button>
+        <button class="action-btn" (click)="manageProtocols()">
+          <span class="action-btn-label">Protocols</span>
+          <span class="action-btn-sub">Create &amp; manage</span>
+        </button>
+        <button class="action-btn" (click)="manageSites()">
+          <span class="action-btn-label">Sites</span>
+          <span class="action-btn-sub">Locations &amp; teams</span>
+        </button>
+        <button class="action-btn" (click)="manageAssignments()">
+          <span class="action-btn-label">Assignments</span>
+          <span class="action-btn-sub">Investigator · Protocol · Site</span>
+        </button>
+        <button class="action-btn" (click)="manageDocuments()">
+          <span class="action-btn-label">Documents</span>
+          <span class="action-btn-sub">Compliance files</span>
+        </button>
+        <button class="action-btn" (click)="manageReports()">
+          <span class="action-btn-label">KPI Reports</span>
+          <span class="action-btn-sub">Analytics &amp; metrics</span>
+        </button>
+        <button class="action-btn" (click)="manageAuditLogs()">
+          <span class="action-btn-label">Audit Logs</span>
+          <span class="action-btn-sub">System activity</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ── AE Detail Modal ─────────────────────────────────────────────────────── -->
+<div class="ae-modal-overlay" *ngIf="showAEModal" (click)="closeAEModal()">
+  <div class="ae-modal-card" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="ae-modal-header">
+      <div class="ae-modal-header-left">
+        <div class="ae-modal-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="ae-modal-title">Adverse Event Detail</h2>
+          <p class="ae-modal-sub">AE #{{ selectedAE?.adverseEventID ?? selectedAE?.id }}</p>
+        </div>
+      </div>
+      <button class="ae-modal-close" (click)="closeAEModal()">&#10005;</button>
+    </div>
+
+    <!-- Badges row -->
+    <div class="ae-modal-badges">
+      <span class="badge badge-lg" [ngClass]="severityClass(selectedAE?.severity)">
+        {{ selectedAE?.severity }}
+      </span>
+      <span class="badge badge-lg" [ngClass]="statusClass(selectedAE?.status)">
+        {{ selectedAE?.status }}
+      </span>
+    </div>
+
+    <!-- Details grid -->
+    <div class="ae-modal-grid">
+      <div class="ae-field">
+        <span class="ae-field-label">Patient ID</span>
+        <span class="ae-field-value">#{{ selectedAE?.patientID ?? '—' }}</span>
+      </div>
+      <div class="ae-field">
+        <span class="ae-field-label">Protocol ID</span>
+        <span class="ae-field-value">#{{ selectedAE?.protocolID ?? '—' }}</span>
+      </div>
+      <div class="ae-field">
+        <span class="ae-field-label">Reported Date</span>
+        <span class="ae-field-value">{{ selectedAE?.reportedDate | date:'MMM d, y' }}</span>
+      </div>
+      <div class="ae-field">
+        <span class="ae-field-label">Severity</span>
+        <span class="ae-field-value">{{ selectedAE?.severity ?? '—' }}</span>
+      </div>
+      <div class="ae-field">
+        <span class="ae-field-label">Status</span>
+        <span class="ae-field-value">{{ selectedAE?.status ?? '—' }}</span>
+      </div>
+      <div class="ae-field">
+        <span class="ae-field-label">Outcome</span>
+        <span class="ae-field-value">{{ selectedAE?.outcome ?? '—' }}</span>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="ae-field ae-field-full">
+      <span class="ae-field-label">Description</span>
+      <p class="ae-field-desc">{{ selectedAE?.description ?? 'No description provided.' }}</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="ae-modal-footer">
+      <button class="btn-close-modal" (click)="closeAEModal()">Close</button>
+    </div>
+
+  </div>
+</div>

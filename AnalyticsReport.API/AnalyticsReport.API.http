@@ -1,0 +1,79 @@
+@AnalyticsReport.API_HostAddress = http://localhost:5062
+@token = REPLACE_WITH_JWT_FROM_AUTH_LOGIN
+
+### List all KPI reports
+GET {{AnalyticsReport.API_HostAddress}}/api/kpi-reports?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### Filter by protocol and report type
+GET {{AnalyticsReport.API_HostAddress}}/api/kpi-reports?protocolId=1&reportType=EnrollmentSummary
+Authorization: Bearer {{token}}
+
+### Filter by status
+GET {{AnalyticsReport.API_HostAddress}}/api/kpi-reports?status=Finalized
+Authorization: Bearer {{token}}
+
+### Filter by site
+GET {{AnalyticsReport.API_HostAddress}}/api/kpi-reports?protocolId=1&siteId=1
+Authorization: Bearer {{token}}
+
+### Get KPI report by id
+GET {{AnalyticsReport.API_HostAddress}}/api/kpi-reports/1
+Authorization: Bearer {{token}}
+
+### Create an enrollment summary report
+POST {{AnalyticsReport.API_HostAddress}}/api/kpi-reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "protocolId": 1,
+  "siteId": null,
+  "reportType": "EnrollmentSummary",
+  "generatedByUserId": 2,
+  "periodStart": "2026-01-01T00:00:00Z",
+  "periodEnd": "2026-06-30T23:59:59Z",
+  "metrics": {
+    "screened": 80,
+    "enrolled": 52,
+    "active": 48,
+    "withdrawn": 4,
+    "completed": 0,
+    "enrollmentRate": 0.65
+  }
+}
+
+### Create a site performance report
+POST {{AnalyticsReport.API_HostAddress}}/api/kpi-reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "protocolId": 1,
+  "siteId": 1,
+  "reportType": "SitePerformance",
+  "generatedByUserId": 2,
+  "periodStart": "2026-01-01T00:00:00Z",
+  "periodEnd": "2026-06-30T23:59:59Z",
+  "metrics": {
+    "patientsEnrolled": 18,
+    "visitsCompleted": 72,
+    "visitComplianceRate": 0.94,
+    "adverseEventsReported": 3,
+    "deviationsReported": 1
+  }
+}
+
+### Finalize a report
+PUT {{AnalyticsReport.API_HostAddress}}/api/kpi-reports/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "Finalized",
+  "metrics": null
+}
+
+### Soft-delete KPI report (Admin only)
+DELETE {{AnalyticsReport.API_HostAddress}}/api/kpi-reports/1
+Authorization: Bearer {{token}}

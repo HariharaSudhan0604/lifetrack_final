@@ -1,0 +1,124 @@
+<main class="main-content">
+
+  <div class="welcome-banner inv-banner">
+    <div class="welcome-text">
+      <h1>Welcome back, {{ firstName }}</h1>
+      <p>Investigator / Physician &nbsp;·&nbsp; Patient enrollment, visits &amp; AE reporting</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon green"><span class="icon-label">ST</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Sites</p>
+        <h3 class="stat-value">{{ loading ? '...' : sites }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon teal"><span class="icon-label">PT</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Patients</p>
+        <h3 class="stat-value">{{ loading ? '...' : patients }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon amber"><span class="icon-label">AE</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Adverse Events</p>
+        <h3 class="stat-value">{{ loading ? '...' : adverseEvents }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon cyan"><span class="icon-label">VS</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Visits</p>
+        <h3 class="stat-value">{{ loading ? '...' : visits }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-grid wide">
+
+    <!-- My Assignments -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">My Assignments</h3>
+        <span class="panel-badge">Protocol · Site</span>
+      </div>
+      <div *ngIf="assignmentsLoading" class="loading-state"><div class="spinner"></div></div>
+      <div *ngIf="!assignmentsLoading && myAssignments.length === 0" class="empty-state">
+        <p>No assignments yet. An Admin or Trial Manager will assign you to a protocol and site.</p>
+      </div>
+      <div class="data-list" *ngIf="!assignmentsLoading && myAssignments.length > 0">
+        <div class="data-item" *ngFor="let a of myAssignments">
+          <div class="data-item-dot assign-dot"></div>
+          <div class="data-item-body">
+            <p class="data-item-title">{{ protocolName(a.protocolID) }}</p>
+            <p class="data-item-sub">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> {{ siteName(a.siteID) }}
+              <ng-container *ngIf="a.initiationDate">
+                &nbsp;·&nbsp; Started {{ a.initiationDate | date:'MMM d, y' }}
+              </ng-container>
+            </p>
+          </div>
+          <span class="badge" [ngClass]="assignmentStatusClass(a.status)">{{ a.status }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Quick Actions</h3>
+      </div>
+      <div class="action-grid">
+        <button class="action-btn" (click)="manageEnrollments()">
+          <span class="action-btn-label">Enroll Patient</span>
+          <span class="action-btn-sub">Add patients to protocols</span>
+        </button>
+        <button class="action-btn" (click)="manageVisits()">
+          <span class="action-btn-label">Manage Visits</span>
+          <span class="action-btn-sub">Schedule &amp; record visits</span>
+        </button>
+        <button class="action-btn" (click)="manageAdverseEvents()">
+          <span class="action-btn-label">Adverse Events</span>
+          <span class="action-btn-sub">Report &amp; track AEs</span>
+        </button>
+        <button class="action-btn" (click)="manageDeviations()">
+          <span class="action-btn-label">Deviations</span>
+          <span class="action-btn-sub">Report protocol deviations</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 2: Recent Adverse Events (full width) -->
+  <div class="panel inv-ae-row">
+    <div class="panel-header">
+      <h3 class="panel-title">Recent Adverse Events</h3>
+      <span class="panel-badge">Latest 6 &nbsp;·&nbsp; Report via Quick Actions</span>
+    </div>
+    <div *ngIf="aesLoading" class="loading-state"><div class="spinner"></div></div>
+    <div *ngIf="!aesLoading && recentAEs.length === 0" class="empty-state">
+      <p>No adverse events on record.</p>
+    </div>
+    <div class="data-list" *ngIf="!aesLoading && recentAEs.length > 0">
+      <div class="data-item" *ngFor="let ae of recentAEs">
+        <div class="data-item-dot ae-dot"></div>
+        <div class="data-item-body">
+          <p class="data-item-title">{{ ae.description ?? '—' }}</p>
+          <p class="data-item-sub">Patient #{{ ae.patientID }} &nbsp;·&nbsp; {{ ae.reportedDate | date:'MMM d, y' }}</p>
+        </div>
+        <div class="badge-stack">
+          <span class="badge" [ngClass]="aeSeverityClass(ae.severity)">{{ ae.severity }}</span>
+          <span class="badge" [ngClass]="aeStatusClass(ae.status)">{{ ae.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>

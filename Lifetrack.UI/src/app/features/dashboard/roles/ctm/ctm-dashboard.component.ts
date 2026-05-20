@@ -1,0 +1,61 @@
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import { AuthService } from '../../../../core/services/auth.service';
+import { UserInfo } from '../../../../core/models/auth.models';
+import { DashboardService } from '../../../../core/services/dashboard.service';
+
+@Component({
+  selector: 'app-ctm-dashboard',
+  standalone: false,
+  templateUrl: './ctm-dashboard.component.html',
+  styleUrls: ['./ctm-dashboard.component.css']
+})
+export class CtmDashboardComponent implements OnInit {
+  user: UserInfo | null;
+
+  protocols = 0; activeEnrollments = 0; openAEs = 0; pendingDocs = 0;
+  recentProtocols: any[] = [];
+  loading = true;
+
+  constructor(
+    private auth: AuthService,
+    private ds: DashboardService,
+    private router: Router
+  ) {
+    this.user = this.auth.currentUser;
+  }
+
+  ngOnInit() {
+    forkJoin({
+      protocols:         this.ds.count('protocols'),
+      activeEnrollments: this.ds.count('enrollments', { status: 'Active' }),
+      openAEs:           this.ds.count('adverse-events', { status: 'Open' }),
+      pendingDocs:       this.ds.count('documents', { status: 'Under Review' }),
+      recentProtocols:   this.ds.list<any>('protocols'),
+    }).subscribe(d => {
+      this.protocols         = d.protocols;
+      this.activeEnrollments = d.activeEnrollments;
+      this.openAEs           = d.openAEs;
+      this.pendingDocs       = d.pendingDocs;
+      this.recentProtocols   = d.recentProtocols;
+      this.loading           = false;
+    });
+  }
+
+  get firstName() { return this.user?.name?.split(' ')[0] ?? this.user?.name; }
+
+  manageProtocols()     { this.router.navigate(['/dashboard/protocols']); }
+  manageSites()         { this.router.navigate(['/dashboard/sites']); }
+  manageAssignments()   { this.router.navigate(['/dashboard/assignments']); }
+  manageAdverseEvents() { this.router.navigate(['/dashboard/adverse-events']); }
+  manageReports()       { this.router.navigate(['/dashboard/reports']); }
+
+  statusClass(s: string): string {
+    const m: Record<string, string> = {
+      Active: 'badge-green', Completed: 'badge-blue',
+      Paused: 'badge-amber', Draft: 'badge-slate', Terminated: 'badge-red'
+    };
+    return m[s] ?? 'badge-slate';
+  }
+}

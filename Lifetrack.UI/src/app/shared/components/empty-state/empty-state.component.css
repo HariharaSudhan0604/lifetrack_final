@@ -1,0 +1,32 @@
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.empty-icon {
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+/* Hide icon wrapper when no icon is projected */
+.empty-icon:empty {
+  display: none;
+}
+
+.empty-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.empty-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: #94a3b8;
+}

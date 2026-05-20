@@ -1,0 +1,66 @@
+@Notification.API_HostAddress = http://localhost:5210
+@token = REPLACE_WITH_JWT_FROM_AUTH_LOGIN
+
+### Get my notifications (calling user)
+GET {{Notification.API_HostAddress}}/api/notifications/my?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### Get only unread notifications
+GET {{Notification.API_HostAddress}}/api/notifications/my?isRead=false
+Authorization: Bearer {{token}}
+
+### Get unread count
+GET {{Notification.API_HostAddress}}/api/notifications/my/unread-count
+Authorization: Bearer {{token}}
+
+### Mark a single notification as read
+POST {{Notification.API_HostAddress}}/api/notifications/1/read
+Authorization: Bearer {{token}}
+
+### Mark all my notifications as read
+POST {{Notification.API_HostAddress}}/api/notifications/my/mark-all-read
+Authorization: Bearer {{token}}
+
+### List all notifications (Admin / ClinicalTrialManager only)
+GET {{Notification.API_HostAddress}}/api/notifications?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### Filter all notifications by type
+GET {{Notification.API_HostAddress}}/api/notifications?type=AdverseEventAlert
+Authorization: Bearer {{token}}
+
+### Get single notification by id
+GET {{Notification.API_HostAddress}}/api/notifications/1
+Authorization: Bearer {{token}}
+
+### Send a notification (Admin / ClinicalTrialManager)
+POST {{Notification.API_HostAddress}}/api/notifications
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipientUserId": 3,
+  "title": "Adverse Event Requires Review",
+  "message": "A new Severe adverse event has been reported for Protocol LT-001. Immediate review required.",
+  "type": "AdverseEventAlert",
+  "relatedEntityType": "AdverseEvent",
+  "relatedEntityId": 1
+}
+
+### Send a visit reminder
+POST {{Notification.API_HostAddress}}/api/notifications
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipientUserId": 5,
+  "title": "Upcoming Visit Reminder",
+  "message": "Your scheduled visit (Baseline Assessment) is in 3 days on 15-Jun-2026.",
+  "type": "VisitReminder",
+  "relatedEntityType": "Visit",
+  "relatedEntityId": 7
+}
+
+### Soft-delete notification (Admin only)
+DELETE {{Notification.API_HostAddress}}/api/notifications/1
+Authorization: Bearer {{token}}

@@ -1,0 +1,8 @@
+<div class="empty-state">
+  <!-- optional icon: <svg empty-icon ...></svg> -->
+  <div class="empty-icon">
+    <ng-content select="[empty-icon]"></ng-content>
+  </div>
+  <h3 class="empty-title" *ngIf="title">{{ title }}</h3>
+  <p class="empty-sub">{{ message }}</p>
+</div>

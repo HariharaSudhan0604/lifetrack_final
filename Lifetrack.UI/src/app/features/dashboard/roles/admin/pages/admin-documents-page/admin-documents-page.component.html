@@ -1,0 +1,175 @@
+<div class="page-container">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <button class="btn-back" (click)="goBack()">&#8592; Back</button>
+      <div class="header-titles">
+        <h1 class="page-title">Documents</h1>
+        <p class="page-subtitle">Manage compliance documents across all protocols</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="openCreateModal()">+ Upload Document</button>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert alert-success" *ngIf="successMsg && !showCreateModal && !showEditModal">{{ successMsg }}</div>
+  <div class="alert alert-error"   *ngIf="errorMsg   && !showCreateModal && !showEditModal">{{ errorMsg }}</div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label class="filter-label" for="statusFilter">Filter by Status</label>
+      <select id="statusFilter" class="filter-select" [(ngModel)]="selectedStatus">
+        <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div class="spinner-container" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading documents...</p>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper" *ngIf="!loading">
+    <table class="data-table" *ngIf="filteredDocuments.length > 0; else emptyState">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Protocol</th>
+          <th>Type</th>
+          <th>Version</th>
+          <th>Uploaded By</th>
+          <th>Upload Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let doc of filteredDocuments; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ protocolMap[doc.protocolID] || 'Protocol #' + doc.protocolID }}</td>
+          <td>{{ doc.type }}</td>
+          <td>{{ doc.version }}</td>
+          <td>{{ doc.uploadedBy || '—' }}</td>
+          <td>{{ doc.uploadedAt | date:'MMM d, y' }}</td>
+          <td><span class="badge" [ngClass]="statusClass(doc.status)">{{ doc.status }}</span></td>
+          <td>
+            <button class="btn-icon" (click)="openEditModal(doc)" title="Edit Status">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <ng-template #emptyState>
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <p>No documents found for the selected filter.</p>
+      </div>
+    </ng-template>
+  </div>
+
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Upload Document</h2>
+      <button class="btn-close" (click)="closeCreateModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-success" *ngIf="successMsg">{{ successMsg }}</div>
+      <div class="alert alert-error"   *ngIf="errorMsg">{{ errorMsg }}</div>
+      <form [formGroup]="createForm" (ngSubmit)="submitCreate()">
+        <div class="form-group">
+          <label class="form-label">Protocol <span class="required">*</span></label>
+          <select formControlName="protocolID" class="form-select" [class.input-err]="f['protocolID'].invalid && f['protocolID'].touched">
+            <option value="">Select a protocol</option>
+            <option *ngFor="let p of protocols" [value]="p.protocolID ?? p.id">{{ p.title ?? p.name }}</option>
+          </select>
+          <span class="err-msg" *ngIf="f['protocolID'].invalid && f['protocolID'].touched">Protocol is required.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Document Type <span class="required">*</span></label>
+          <select formControlName="type" class="form-select" [class.input-err]="f['type'].invalid && f['type'].touched">
+            <option value="">Select a type</option>
+            <option *ngFor="let t of documentTypes" [value]="t">{{ t }}</option>
+          </select>
+          <span class="err-msg" *ngIf="f['type'].invalid && f['type'].touched">Type is required.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Version <span class="required">*</span></label>
+          <input formControlName="version" type="text" class="form-select" placeholder="v1.0" [class.input-err]="f['version'].invalid && f['version'].touched" />
+          <span class="err-msg" *ngIf="f['version'].invalid && f['version'].touched">Version is required.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status <span class="required">*</span></label>
+          <select formControlName="status" class="form-select" [class.input-err]="f['status'].invalid && f['status'].touched">
+            <option value="Pending">Pending</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+          <span class="err-msg" *ngIf="f['status'].invalid && f['status'].touched">Status is required.</span>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeCreateModal()">Cancel</button>
+          <button type="submit" class="btn-primary">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Update Document Status</h2>
+      <button class="btn-close" (click)="closeEditModal()">&#10005;</button>
+    </div>
+    <div class="modal-body" *ngIf="editingDoc">
+      <div class="alert alert-success" *ngIf="successMsg">{{ successMsg }}</div>
+      <div class="alert alert-error"   *ngIf="errorMsg">{{ errorMsg }}</div>
+
+      <!-- Read-only context block -->
+      <div class="context-block">
+        <div class="context-item">
+          <span class="context-label">Protocol</span>
+          <span class="context-value">{{ protocolMap[editingDoc.protocolID] || 'Protocol #' + editingDoc.protocolID }}</span>
+        </div>
+        <div class="context-item">
+          <span class="context-label">Type</span>
+          <span class="context-value">{{ editingDoc.type }}</span>
+        </div>
+        <div class="context-item">
+          <span class="context-label">Version</span>
+          <span class="context-value">{{ editingDoc.version }}</span>
+        </div>
+      </div>
+
+      <form [formGroup]="editForm" (ngSubmit)="submitEdit()">
+        <div class="form-group">
+          <label class="form-label">Status <span class="required">*</span></label>
+          <select formControlName="status" class="form-select">
+            <option value="Pending">Pending</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

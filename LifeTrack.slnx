@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/Frontend/">
+    <Project Path="Lifetrack.UI/Lifetrack.UI.esproj">
+      <Build />
+      <Deploy />
+    </Project>
+  </Folder>
+  <Folder Name="/Gateway/">
+    <Project Path="Gateway.API/Gateway.API.csproj" />
+  </Folder>
+  <Folder Name="/Microservices/">
+    <Project Path="AdverseEvent.API/AdverseEvent.API.csproj" Id="34fd36ab-bb9c-43b8-af73-0546387544ee" />
+    <Project Path="AnalyticsReport.API/AnalyticsReport.API.csproj" Id="130d56f6-4544-49e4-ae2a-f52928239945" />
+    <Project Path="Authentication.API/Authentication.API.csproj" />
+    <Project Path="DocumentCompliance.API/DocumentCompliance.API.csproj" Id="586ff4d9-da00-4669-9c1e-e76ab9933327" />
+    <Project Path="Notification.API/Notification.API.csproj" Id="e933f1ad-854f-4e72-ae36-59054eea13f0" />
+    <Project Path="Patient.API/Patient.API.csproj" />
+    <Project Path="ProtocolSite.API/ProtocolSite.API.csproj" Id="b44fc1a2-ee83-4563-8083-949c6f61b141" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="Shared.CL/Shared.CL.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,121 @@
+<main class="main-content">
+
+  <div class="welcome-banner reg-banner">
+    <div class="welcome-text">
+      <h1>Welcome back, {{ firstName }}</h1>
+      <p>Regulatory Officer &nbsp;·&nbsp; Documentation, compliance &amp; audit oversight</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon blue"><span class="icon-label">DC</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Total Documents</p>
+        <h3 class="stat-value">{{ loading ? '...' : totalDocs }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><span class="icon-label">AP</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Approved Docs</p>
+        <h3 class="stat-value">{{ loading ? '...' : approvedDocs }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red"><span class="icon-label">AE</span></div>
+      <div class="stat-body">
+        <p class="stat-label">Severe AEs</p>
+        <h3 class="stat-value">{{ loading ? '...' : severeAEs }}</h3>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon amber"><span class="icon-label">KP</span></div>
+      <div class="stat-body">
+        <p class="stat-label">KPI Reports</p>
+        <h3 class="stat-value">{{ loading ? '...' : kpiReports }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 1: Recent Documents + Quick Actions -->
+  <div class="content-grid wide">
+
+    <!-- Recent Documents -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Recent Documents</h3>
+        <span class="panel-badge">Latest 6</span>
+      </div>
+      <div *ngIf="loading" class="loading-state"><div class="spinner"></div></div>
+      <div *ngIf="!loading && recentDocs.length === 0" class="empty-state">
+        <p>No documents found</p>
+      </div>
+      <div class="data-list" *ngIf="!loading && recentDocs.length > 0">
+        <div class="data-item" *ngFor="let d of recentDocs">
+          <div class="data-item-dot dc-dot"></div>
+          <div class="data-item-body">
+            <p class="data-item-title">{{ d.title ?? '—' }}</p>
+            <p class="data-item-sub">
+              <ng-container *ngIf="d.documentType">{{ d.documentType }} &nbsp;·&nbsp; </ng-container>v{{ d.version }} &nbsp;·&nbsp; {{ d.uploadedDate | date:'MMM d, y' }}
+            </p>
+          </div>
+          <span class="badge" [ngClass]="docStatusClass(d.status)">{{ d.status }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Quick Actions</h3>
+      </div>
+      <div class="action-grid">
+        <button class="action-btn" (click)="viewDocuments()">
+          <span class="action-btn-label">Documents</span>
+          <span class="action-btn-sub">Review &amp; approve</span>
+        </button>
+        <button class="action-btn" (click)="viewProtocols()">
+          <span class="action-btn-label">Protocols</span>
+          <span class="action-btn-sub">View trial protocols</span>
+        </button>
+        <button class="action-btn" (click)="viewAdverseEvents()">
+          <span class="action-btn-label">Adverse Events</span>
+          <span class="action-btn-sub">Safety signal review</span>
+        </button>
+        <button class="action-btn" (click)="viewAuditLogs()">
+          <span class="action-btn-label">Audit Logs</span>
+          <span class="action-btn-sub">GxP &amp; HIPAA audit trail</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 2: Protocol Deviations (full width) -->
+  <div class="panel panel-full-row">
+    <div class="panel-header">
+      <h3 class="panel-title">Protocol Deviations</h3>
+      <span class="panel-badge">Latest 6</span>
+    </div>
+    <div *ngIf="loading" class="loading-state"><div class="spinner"></div></div>
+    <div *ngIf="!loading && recentDeviations.length === 0" class="empty-state">
+      <p>No deviations on record</p>
+    </div>
+    <div class="data-list" *ngIf="!loading && recentDeviations.length > 0">
+      <div class="data-item" *ngFor="let dv of recentDeviations">
+        <div class="data-item-dot dv-dot"></div>
+        <div class="data-item-body">
+          <p class="data-item-title">{{ dv.description ?? '—' }}</p>
+          <p class="data-item-sub">Site Protocol #{{ dv.siteProtocolID }} &nbsp;·&nbsp; {{ dv.reportedDate | date:'MMM d, y' }}</p>
+        </div>
+        <div class="badge-stack">
+          <span class="badge" [ngClass]="devSeverityClass(dv.severity)">{{ dv.severity }}</span>
+          <span class="badge" [ngClass]="devStatusClass(dv.status)">{{ dv.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>

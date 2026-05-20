@@ -1,0 +1,102 @@
+@ProtocolSite.API_HostAddress = http://localhost:5146
+@token = REPLACE_WITH_JWT_FROM_AUTH_LOGIN
+
+### List protocols
+GET {{ProtocolSite.API_HostAddress}}/api/protocols?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### List protocols by status / phase
+GET {{ProtocolSite.API_HostAddress}}/api/protocols?status=Active&phase=Phase2
+Authorization: Bearer {{token}}
+
+### Get protocol by id
+GET {{ProtocolSite.API_HostAddress}}/api/protocols/1
+Authorization: Bearer {{token}}
+
+### Create protocol (Admin / ClinicalTrialManager)
+POST {{ProtocolSite.API_HostAddress}}/api/protocols
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "LT-001 Cardio Outcomes Study",
+  "phase": "Phase2",
+  "startDate": "2026-06-01T00:00:00Z",
+  "endDate": "2027-12-31T00:00:00Z",
+  "status": "Draft"
+}
+
+### Update protocol
+PUT {{ProtocolSite.API_HostAddress}}/api/protocols/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "LT-001 Cardio Outcomes Study (Amended)",
+  "phase": "Phase2",
+  "startDate": "2026-06-01T00:00:00Z",
+  "endDate": "2028-06-30T00:00:00Z",
+  "status": "Active"
+}
+
+### Soft-delete protocol (Admin)
+DELETE {{ProtocolSite.API_HostAddress}}/api/protocols/1
+Authorization: Bearer {{token}}
+
+### List sites
+GET {{ProtocolSite.API_HostAddress}}/api/sites?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### List sites filtered by investigator
+GET {{ProtocolSite.API_HostAddress}}/api/sites?investigatorId=2
+Authorization: Bearer {{token}}
+
+### Get site by id
+GET {{ProtocolSite.API_HostAddress}}/api/sites/1
+Authorization: Bearer {{token}}
+
+### Create site (Admin / ClinicalTrialManager)
+POST {{ProtocolSite.API_HostAddress}}/api/sites
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Boston General Hospital",
+  "location": "Boston, MA, USA",
+  "investigatorId": null,
+  "status": "Pending"
+}
+
+### Update site
+PUT {{ProtocolSite.API_HostAddress}}/api/sites/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Boston General Hospital",
+  "location": "55 Fruit St, Boston, MA",
+  "investigatorId": 2,
+  "status": "Active"
+}
+
+### Assign investigator
+POST {{ProtocolSite.API_HostAddress}}/api/sites/1/assign-investigator
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "investigatorId": 2
+}
+
+### Clear investigator assignment
+POST {{ProtocolSite.API_HostAddress}}/api/sites/1/assign-investigator
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "investigatorId": null
+}
+
+### Soft-delete site (Admin)
+DELETE {{ProtocolSite.API_HostAddress}}/api/sites/1
+Authorization: Bearer {{token}}

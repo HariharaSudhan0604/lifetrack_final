@@ -1,0 +1,112 @@
+@Patient.API_HostAddress = http://localhost:5095
+@token = REPLACE_WITH_JWT_FROM_AUTH_LOGIN
+
+### List all patients
+GET {{Patient.API_HostAddress}}/api/patients?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### List patients by protocol
+GET {{Patient.API_HostAddress}}/api/patients?protocolId=1
+Authorization: Bearer {{token}}
+
+### List patients by site and status
+GET {{Patient.API_HostAddress}}/api/patients?siteId=1&status=Active
+Authorization: Bearer {{token}}
+
+### Get patient by id
+GET {{Patient.API_HostAddress}}/api/patients/1
+Authorization: Bearer {{token}}
+
+### Enroll a new patient (Admin / ClinicalTrialManager / Investigator)
+POST {{Patient.API_HostAddress}}/api/patients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "userId": 5,
+  "protocolId": 1,
+  "siteId": 1,
+  "enrollmentDate": "2026-06-01T00:00:00Z",
+  "status": "Screened"
+}
+
+### Update patient
+PUT {{Patient.API_HostAddress}}/api/patients/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "userId": 5,
+  "protocolId": 1,
+  "siteId": 1,
+  "status": "Enrolled",
+  "enrollmentDate": "2026-06-01T00:00:00Z",
+  "withdrawalDate": null,
+  "withdrawalReason": null
+}
+
+### Withdraw patient
+POST {{Patient.API_HostAddress}}/api/patients/1/withdraw
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "withdrawalDate": "2026-09-15T00:00:00Z",
+  "withdrawalReason": "Patient request — personal reasons"
+}
+
+### Soft-delete patient (Admin only)
+DELETE {{Patient.API_HostAddress}}/api/patients/1
+Authorization: Bearer {{token}}
+
+### ── Visits ─────────────────────────────────────────────────────────────────
+
+### List all visits
+GET {{Patient.API_HostAddress}}/api/visits?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### List visits by status
+GET {{Patient.API_HostAddress}}/api/visits?status=Scheduled
+Authorization: Bearer {{token}}
+
+### List visits in date range
+GET {{Patient.API_HostAddress}}/api/visits?scheduledFrom=2026-06-01&scheduledTo=2026-12-31
+Authorization: Bearer {{token}}
+
+### List visits for a specific patient
+GET {{Patient.API_HostAddress}}/api/visits/patient/1?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### Get visit by id
+GET {{Patient.API_HostAddress}}/api/visits/1
+Authorization: Bearer {{token}}
+
+### Schedule a visit (Admin / ClinicalTrialManager / Investigator)
+POST {{Patient.API_HostAddress}}/api/visits
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 1,
+  "visitType": "Baseline Assessment",
+  "scheduledDate": "2026-06-15T09:00:00Z",
+  "status": "Scheduled",
+  "notes": "Initial baseline visit — fasting required"
+}
+
+### Update visit
+PUT {{Patient.API_HostAddress}}/api/visits/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "visitType": "Baseline Assessment",
+  "scheduledDate": "2026-06-15T09:00:00Z",
+  "status": "Completed",
+  "actualDate": "2026-06-15T09:30:00Z",
+  "notes": "Completed — all samples collected"
+}
+
+### Soft-delete visit (Admin only)
+DELETE {{Patient.API_HostAddress}}/api/visits/1
+Authorization: Bearer {{token}}

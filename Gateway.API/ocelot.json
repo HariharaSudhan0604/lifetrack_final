@@ -1,0 +1,244 @@
+{
+  "Routes": [
+
+    // ── Authentication.API — Audit Entries (governance DB) ───────────────────
+    {
+      "UpstreamPathTemplate": "/gateway/governance-audit-entries",
+      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "DownstreamPathTemplate": "/api/audit-entries",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5033 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/governance-audit-entries/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "DownstreamPathTemplate": "/api/audit-entries/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5033 } ]
+    },
+
+    // ── ProtocolSite.API — Audit Entries (clinical DB) ────────────────────────
+    {
+      "UpstreamPathTemplate": "/gateway/clinical-audit-entries",
+      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "DownstreamPathTemplate": "/api/audit-entries",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5193 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/clinical-audit-entries/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "DownstreamPathTemplate": "/api/audit-entries/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5193 } ]
+    },
+
+    // ── Authentication.API  (port 5033) ──────────────────────────────────────
+    {
+      "UpstreamPathTemplate": "/gateway/auth/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/auth/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5033 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/users",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/users",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5033 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/users/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/users/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5033 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/audit-logs",
+      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "DownstreamPathTemplate": "/api/audit-logs",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5033 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/audit-logs/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "DownstreamPathTemplate": "/api/audit-logs/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5033 } ]
+    },
+
+    // ── ProtocolSite.API  (port 5193) ─────────────────────────────────────────
+    {
+      "UpstreamPathTemplate": "/gateway/protocols",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/protocols",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5193 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/protocols/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/protocols/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5193 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/sites",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/sites",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5193 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/sites/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/sites/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5193 } ]
+    },
+
+    // ── ProtocolSite.API — SiteProtocol assignments ───────────────────────────
+    {
+      "UpstreamPathTemplate": "/gateway/site-protocols",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/site-protocols",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5193 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/site-protocols/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/site-protocols/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5193 } ]
+    },
+
+    // ── Patient.API  (port 5095) ──────────────────────────────────────────────
+    {
+      "UpstreamPathTemplate": "/gateway/enrollments",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/enrollments",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5095 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/enrollments/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/enrollments/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5095 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/patients",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/patients",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5095 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/patients/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/patients/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5095 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/visits",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/visits",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5095 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/visits/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/visits/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5095 } ]
+    },
+
+    // ── AdverseEvent.API  (port 5159) ─────────────────────────────────────────
+    {
+      "UpstreamPathTemplate": "/gateway/adverse-events",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/adverse-events",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5159 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/adverse-events/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/adverse-events/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5159 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/deviations",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/deviations",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5159 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/deviations/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/deviations/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5159 } ]
+    },
+
+    // ── DocumentCompliance.API  (port 5232) ───────────────────────────────────
+    {
+      "UpstreamPathTemplate": "/gateway/documents",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/documents",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5232 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/documents/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/documents/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5232 } ]
+    },
+
+    // ── AnalyticsReport.API  (port 5062) ──────────────────────────────────────
+    {
+      "UpstreamPathTemplate": "/gateway/kpi-reports",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/kpi-reports",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5062 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/kpi-reports/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/kpi-reports/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5062 } ]
+    },
+
+    // ── Notification.API  (port 5210) ─────────────────────────────────────────
+    {
+      "UpstreamPathTemplate": "/gateway/notifications",
+      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "DownstreamPathTemplate": "/api/notifications",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5210 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/notifications/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/notifications/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5210 } ]
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://localhost:5046"
+  }
+}

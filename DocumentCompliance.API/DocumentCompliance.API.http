@@ -1,0 +1,75 @@
+@DocumentCompliance.API_HostAddress = http://localhost:5232
+@token = REPLACE_WITH_JWT_FROM_AUTH_LOGIN
+
+### List documents
+GET {{DocumentCompliance.API_HostAddress}}/api/documents?skip=0&take=50
+Authorization: Bearer {{token}}
+
+### Filter by category and status
+GET {{DocumentCompliance.API_HostAddress}}/api/documents?category=ConsentForm&status=Approved
+Authorization: Bearer {{token}}
+
+### Filter by protocol
+GET {{DocumentCompliance.API_HostAddress}}/api/documents?protocolId=1
+Authorization: Bearer {{token}}
+
+### Get document by id (includes all versions)
+GET {{DocumentCompliance.API_HostAddress}}/api/documents/1
+Authorization: Bearer {{token}}
+
+### Create a new document
+POST {{DocumentCompliance.API_HostAddress}}/api/documents
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "LT-001 Patient Informed Consent Form v1",
+  "category": "ConsentForm",
+  "uploadedByUserId": 2,
+  "protocolId": 1
+}
+
+### Update document metadata / status
+PUT {{DocumentCompliance.API_HostAddress}}/api/documents/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "LT-001 Patient Informed Consent Form v1",
+  "category": "ConsentForm",
+  "status": "UnderReview",
+  "protocolId": 1
+}
+
+### Approve a document
+PUT {{DocumentCompliance.API_HostAddress}}/api/documents/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "LT-001 Patient Informed Consent Form v1",
+  "category": "ConsentForm",
+  "status": "Approved",
+  "protocolId": 1
+}
+
+### Add a new version to a document
+POST {{DocumentCompliance.API_HostAddress}}/api/documents/1/versions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "filePath": "uploads/documents/1/consent_v2.pdf",
+  "fileSizeBytes": 204800,
+  "contentType": "application/pdf",
+  "uploadedByUserId": 2,
+  "notes": "Updated consent form with revised risk section per IRB feedback."
+}
+
+### List all versions for a document
+GET {{DocumentCompliance.API_HostAddress}}/api/documents/1/versions
+Authorization: Bearer {{token}}
+
+### Soft-delete document (Admin only)
+DELETE {{DocumentCompliance.API_HostAddress}}/api/documents/1
+Authorization: Bearer {{token}}
