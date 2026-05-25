@@ -12,7 +12,8 @@
       "Bash(dotnet build *)",
       "Bash(Get-ChildItem -Recurse -Depth 3 -Directory)",
       "Bash(Select-Object FullName)",
-      "Bash(npx --no-install ng build --configuration=development)"
+      "Bash(npx --no-install ng build --configuration=development)",
+      "Bash(curl -s \"https://api.github.com/repos/Saiteja-2103/LifeTrack-ClinicalTrails/pulls?head=Saiteja-2103:Frontend&state=open\")"
     ]
   }
 }
