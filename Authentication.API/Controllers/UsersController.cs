@@ -33,13 +33,13 @@ public class UsersController : ControllerBase
 
     [HttpPut("{id:long}")]
     [RoleAuthorize(RolesEnum.Admin)]
-    public async Task<ActionResult<UserResponse>> Update(long id, [FromBody] UpdateUserRequest req)
+    public async Task<IActionResult> Update(long id, [FromBody] UpdateUserRequest req)
     {
         var actingId = GetUserId() ?? 0;
         try
         {
             var user = await _users.UpdateAsync(id, req, actingId);
-            return user is null ? NotFound() : Ok(user);
+            return user is null ? NotFound() : NoContent();
         }
         catch (InvalidOperationException ex)
         {

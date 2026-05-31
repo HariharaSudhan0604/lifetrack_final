@@ -84,6 +84,9 @@ builder.Services.AddRateLimiter(o =>
 // ── Caching ────────────────────────────────────────────────────────────────
 builder.Services.AddMemoryCache();
 
+// ── HTTP context accessor (used by AuthDbContext to stamp changedByUserID on audit rows) ──
+builder.Services.AddHttpContextAccessor();
+
 // ── Database ───────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("GovernanceDb")));

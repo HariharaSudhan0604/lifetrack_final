@@ -17,24 +17,24 @@ public class DocumentService : IDocumentService
 
     public DocumentService(IDocumentRepository repo, IMemoryCache cache)
     {
-        _repo = repo;
+        _repo  = repo;
         _cache = cache;
     }
 
     public async Task<PagedResult<DocumentResponse>> ListAsync(
-        long? protocolId, string? status, string? type, int page, int pageSize)
+        long? protocolId, string? status, string? category, int page, int pageSize)
     {
-        var v = GetVersion();
-        var key = $"documents:list:v{v}:{protocolId}:{status}:{type}:{page}:{pageSize}";
+        var v   = GetVersion();
+        var key = $"documents:list:v{v}:{protocolId}:{status}:{category}:{page}:{pageSize}";
         if (_cache.TryGetValue(key, out PagedResult<DocumentResponse>? cached) && cached is not null)
             return cached;
-        var (items, total) = await _repo.ListAsync(protocolId, status, type, page, pageSize);
+        var (items, total) = await _repo.ListAsync(protocolId, status, category, page, pageSize);
         var result = new PagedResult<DocumentResponse>
         {
-            Page = page,
-            PageSize = pageSize,
+            Page       = page,
+            PageSize   = pageSize,
             TotalCount = total,
-            Items = items.Select(ToResponse).ToList()
+            Items      = items.Select(ToResponse).ToList()
         };
         _cache.Set(key, result, CacheDuration);
         return result;
@@ -56,12 +56,14 @@ public class DocumentService : IDocumentService
     {
         var doc = new Document
         {
+            Title      = req.Title,
+            Category   = req.Category,
             ProtocolID = req.ProtocolID,
-            Type = req.Type,
-            Version = req.Version,
+            Version    = req.Version,
+            Notes      = req.Notes,
             UploadedBy = req.UploadedBy,
             UploadedAt = DateTime.UtcNow,
-            Status = "Draft"
+            Status     = "Draft"
         };
         var created = await _repo.AddAsync(doc);
         BumpVersion();
@@ -74,10 +76,12 @@ public class DocumentService : IDocumentService
         if (doc is null) return null;
         if (doc.Status == "Approved" && req.Status == "Draft")
             throw new DomainException("An approved document cannot be reverted to Draft.");
+        doc.Title      = req.Title;
+        doc.Category   = req.Category;
         doc.ProtocolID = req.ProtocolID;
-        doc.Type = req.Type;
-        doc.Version = req.Version;
-        doc.Status = req.Status;
+        doc.Version    = req.Version;
+        doc.Notes      = req.Notes;
+        doc.Status     = req.Status;
         doc.UploadedBy = req.UploadedBy;
         await _repo.UpdateAsync(doc);
         Invalidate(documentId);
@@ -93,5 +97,6 @@ public class DocumentService : IDocumentService
     private void Invalidate(long id) { _cache.Remove($"{ItemPrefix}:{id}"); BumpVersion(); }
 
     private static DocumentResponse ToResponse(Document d) =>
-        new(d.DocumentID, d.ProtocolID, d.Type, d.Version, d.UploadedBy, d.UploadedAt, d.Status);
+        new(d.DocumentID, d.Title, d.Category, d.ProtocolID, d.Version,
+            d.UploadedBy, d.UploadedAt, d.Status, d.Notes);
 }

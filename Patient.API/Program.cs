@@ -54,6 +54,9 @@ builder.Services.AddSwaggerGen(c =>
 // ── Caching ────────────────────────────────────────────────────────────────
 builder.Services.AddMemoryCache();
 
+// ── HTTP context accessor (used by PatientDbContext to stamp changedByUserID on audit rows) ──
+builder.Services.AddHttpContextAccessor();
+
 // ── Database ───────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<PatientDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ClinicalDb")));

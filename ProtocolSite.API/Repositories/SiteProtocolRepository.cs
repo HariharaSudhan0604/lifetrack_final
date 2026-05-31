@@ -25,6 +25,12 @@ public class SiteProtocolRepository : ISiteProtocolRepository
         return (items, total);
     }
 
+    public Task<bool> HasAssignmentsAsync(long siteId) =>
+        _db.SiteProtocols.AsNoTracking().AnyAsync(sp => sp.SiteID == siteId);
+
+    public Task<bool> HasProtocolAssignmentsAsync(long protocolId) =>
+        _db.SiteProtocols.AsNoTracking().AnyAsync(sp => sp.ProtocolID == protocolId);
+
     public async Task<SiteProtocol> AddAsync(SiteProtocol sp)
     { _db.SiteProtocols.Add(sp); await _db.SaveChangesAsync(); return sp; }
 

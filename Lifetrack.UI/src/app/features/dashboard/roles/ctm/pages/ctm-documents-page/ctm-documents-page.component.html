@@ -1,124 +1,193 @@
-<div class="page-container">
+<div class="doc-page">
 
-  <!-- Page Header -->
-  <div class="page-header">
-    <div class="header-left">
-      <button class="btn-back" (click)="goBack()">&#8592; Back</button>
-      <div class="header-titles">
-        <h1 class="page-title">Documents</h1>
-        <p class="page-subtitle">Review compliance documents and manage approval status</p>
+  <!-- ── Header ────────────────────────────────────────────────────────────── -->
+  <div class="doc-header">
+    <div class="doc-header-left">
+      <button class="btn-back" (click)="goBack()">← Back</button>
+      <div>
+        <h1 class="doc-title">Documents</h1>
+        <p class="doc-sub">{{ filteredDocuments.length }} document{{ filteredDocuments.length !== 1 ? 's' : '' }} · {{ activeCategory === 'All' ? 'All categories' : activeCategory }}</p>
       </div>
     </div>
+    <button class="btn-new-doc" *ngIf="!isRegulatoryOfficer" (click)="openCreate()">+ New Document</button>
   </div>
 
-  <!-- Filter Bar -->
-  <div class="filter-bar">
-    <div class="filter-group">
-      <label class="filter-label" for="statusFilter">Filter by Status</label>
-      <select id="statusFilter" class="filter-select" [(ngModel)]="selectedStatus" (change)="onStatusFilterChange()">
-        <option value="">All</option>
-        <option value="Approved">Approved</option>
-        <option value="Under Review">Under Review</option>
-        <option value="Pending">Pending</option>
-        <option value="Rejected">Rejected</option>
-      </select>
+  <!-- ── Category tabs ──────────────────────────────────────────────────────── -->
+  <div class="category-tabs-wrap">
+    <div class="category-tabs">
+      <button class="cat-tab" *ngFor="let c of categoryTabs"
+        [class.cat-tab--active]="activeCategory === c"
+        (click)="setCategory(c)">
+        {{ c === 'All' ? 'All' : categoryLabels[c] || c }}
+        <span class="cat-count" *ngIf="countFor(c) > 0">{{ countFor(c) }}</span>
+      </button>
     </div>
   </div>
 
-  <!-- Error Alert -->
-  <div class="alert alert-error" *ngIf="error && !showEditModal">{{ error }}</div>
-
-  <!-- Loading Spinner -->
-  <div class="spinner-container" *ngIf="loading">
-    <div class="spinner"></div>
-    <p>Loading documents...</p>
+  <!-- ── Toolbar ────────────────────────────────────────────────────────────── -->
+  <div class="doc-toolbar">
+    <input class="doc-search" [(ngModel)]="searchTerm" placeholder="Search by title…">
+    <select class="doc-status-filter" [(ngModel)]="statusFilter">
+      <option value="">All statuses</option>
+      <option value="Draft">Draft</option>
+      <option value="Under Review">Under Review</option>
+      <option value="Approved">Approved</option>
+      <option value="Rejected">Rejected</option>
+    </select>
   </div>
 
-  <!-- Table -->
-  <div class="table-wrapper" *ngIf="!loading">
-    <table class="data-table" *ngIf="filteredDocuments.length > 0; else emptyState">
+  <!-- ── Error / Loading ────────────────────────────────────────────────────── -->
+  <div class="alert-error" *ngIf="error">{{ error }}</div>
+  <div class="doc-loading" *ngIf="loading"><div class="spinner"></div><span>Loading documents…</span></div>
+
+  <!-- ── Table ──────────────────────────────────────────────────────────────── -->
+  <div class="doc-table-wrap" *ngIf="!loading">
+
+    <div class="doc-empty" *ngIf="filteredDocuments.length === 0">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <p>No documents found.</p>
+    </div>
+
+    <table class="doc-table" *ngIf="filteredDocuments.length > 0">
       <thead>
         <tr>
-          <th>#</th>
+          <th>Title</th>
+          <th>Category</th>
           <th>Protocol</th>
-          <th>Type</th>
           <th>Version</th>
-          <th>Uploaded By</th>
-          <th>Upload Date</th>
           <th>Status</th>
-          <th>Actions</th>
+          <th>Uploaded</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let doc of filteredDocuments; let i = index">
-          <td>{{ i + 1 }}</td>
-          <td>{{ protocolMap[doc.protocolID] || 'Protocol #' + doc.protocolID }}</td>
-          <td>{{ doc.type }}</td>
-          <td>{{ doc.version }}</td>
-          <td>{{ doc.uploadedBy || '—' }}</td>
-          <td>{{ doc.uploadedAt | date:'MMM d, y' }}</td>
-          <td><span class="badge" [ngClass]="statusClass(doc.status)">{{ doc.status }}</span></td>
+        <tr *ngFor="let d of pagedDocuments">
+          <td class="doc-title-cell">{{ d.title }}</td>
+          <td><span class="cat-badge" [ngClass]="categoryClass(d.category)">{{ categoryLabels[d.category] || d.category }}</span></td>
+          <td class="doc-muted">{{ protocolName(d.protocolID) }}</td>
+          <td class="doc-version">v{{ d.version }}</td>
+          <td><span class="status-badge" [ngClass]="statusClass(d.status)">{{ d.status }}</span></td>
+          <td class="doc-muted">{{ d.uploadedAt | date:'d MMM yyyy' }}</td>
           <td>
-            <button class="btn-icon" (click)="openEditModal(doc)" title="Edit Status"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="btn-doc-action" (click)="openEdit(d)">
+              {{ isRegulatoryOfficer ? 'Review' : 'Edit' }}
+            </button>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <ng-template #emptyState>
-      <div class="empty-state">
-        <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-        <p>No documents found for the selected filter.</p>
-      </div>
-    </ng-template>
+    <!-- Pagination -->
+    <div class="doc-pagination" *ngIf="totalPages > 1">
+      <button class="page-btn" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">← Prev</button>
+      <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+      <button class="page-btn" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1">Next →</button>
+    </div>
   </div>
 
-  <!-- Edit Modal -->
-  <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+  <!-- ══ Create Document Modal ════════════════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showCreate" (click)="closeCreate()">
     <div class="modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2 class="modal-title">Update Document Status</h2>
-        <button class="btn-close" (click)="closeEditModal()">&#10005;</button>
+        <h2 class="modal-title">New Document</h2>
+        <button class="btn-close" (click)="closeCreate()">✕</button>
       </div>
+      <div class="modal-body">
+        <div class="alert alert-error" *ngIf="createError">{{ createError }}</div>
 
-      <div class="modal-body" *ngIf="selectedDoc">
-
-        <!-- Read-only context block -->
-        <div class="context-block">
-          <div class="context-item">
-            <span class="context-label">Protocol</span>
-            <span class="context-value">{{ protocolMap[selectedDoc.protocolID] || 'Protocol #' + selectedDoc.protocolID }}</span>
-          </div>
-          <div class="context-item">
-            <span class="context-label">Type</span>
-            <span class="context-value">{{ selectedDoc.type }}</span>
-          </div>
-          <div class="context-item">
-            <span class="context-label">Version</span>
-            <span class="context-value">{{ selectedDoc.version }}</span>
-          </div>
-        </div>
-
-        <!-- Editable Status -->
         <div class="form-group">
-          <label class="form-label" for="editStatus">Status</label>
-          <select id="editStatus" class="form-select" [(ngModel)]="editStatus">
-            <option value="Approved">Approved</option>
-            <option value="Under Review">Under Review</option>
-            <option value="Pending">Pending</option>
-            <option value="Rejected">Rejected</option>
+          <label class="form-label">Title <span class="req">*</span></label>
+          <input class="form-input" [(ngModel)]="createForm.title" placeholder="Document title…" maxlength="300">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category <span class="req">*</span></label>
+          <select class="form-select" [(ngModel)]="createForm.category">
+            <option value="">— Select category —</option>
+            <option *ngFor="let c of categories" [value]="c.value">{{ c.label }}</option>
           </select>
         </div>
-
-        <div class="alert alert-success" *ngIf="success">{{ success }}</div>
-        <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+        <div class="form-group">
+          <label class="form-label">Protocol <span class="form-optional">(optional)</span></label>
+          <select class="form-select" [(ngModel)]="createForm.protocolID">
+            <option [ngValue]="null">— Not protocol-specific —</option>
+            <option *ngFor="let p of protocols" [ngValue]="p.protocolID">{{ p.title }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Version</label>
+          <input class="form-input" [(ngModel)]="createForm.version" placeholder="1.0" maxlength="20">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes <span class="form-optional">(optional)</span></label>
+          <textarea class="form-textarea" [(ngModel)]="createForm.notes" placeholder="Brief description of this document…" maxlength="1000" rows="3"></textarea>
+        </div>
       </div>
-
       <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeEditModal()" [disabled]="submitting">Cancel</button>
-        <button class="btn-primary" (click)="saveEdit()" [disabled]="submitting">
-          <span *ngIf="submitting">Saving...</span>
-          <span *ngIf="!submitting">Save</span>
+        <button class="btn-secondary" (click)="closeCreate()" [disabled]="createSubmitting">Cancel</button>
+        <button class="btn-primary" (click)="submitCreate()" [disabled]="createSubmitting">
+          {{ createSubmitting ? 'Creating…' : 'Create Document' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Edit / Review Modal ══════════════════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showEdit" (click)="closeEdit()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">{{ isRegulatoryOfficer ? 'Review Document' : 'Edit Document' }}</h2>
+        <button class="btn-close" (click)="closeEdit()">✕</button>
+      </div>
+      <div class="modal-body" *ngIf="editDoc">
+        <div class="alert alert-success" *ngIf="editSuccess">{{ editSuccess }}</div>
+        <div class="alert alert-error"   *ngIf="editError">{{ editError }}</div>
+
+        <!-- Read-only info for RegOfficer -->
+        <ng-container *ngIf="isRegulatoryOfficer">
+          <div class="review-info-grid">
+            <div class="review-info-row"><span class="review-info-lbl">Title</span><span class="review-info-val">{{ editDoc.title }}</span></div>
+            <div class="review-info-row"><span class="review-info-lbl">Category</span><span class="review-info-val">{{ categoryLabels[editDoc.category] || editDoc.category }}</span></div>
+            <div class="review-info-row"><span class="review-info-lbl">Protocol</span><span class="review-info-val">{{ protocolName(editDoc.protocolID) }}</span></div>
+            <div class="review-info-row"><span class="review-info-lbl">Version</span><span class="review-info-val">v{{ editDoc.version }}</span></div>
+            <div class="review-info-row" *ngIf="editDoc.notes"><span class="review-info-lbl">Notes</span><span class="review-info-val">{{ editDoc.notes }}</span></div>
+          </div>
+          <div class="form-group" style="margin-top:16px">
+            <label class="form-label">Status decision</label>
+            <select class="form-select" [(ngModel)]="editStatus">
+              <option value="Draft">Draft</option>
+              <option value="Under Review">Under Review</option>
+              <option value="Approved">Approved ✓</option>
+              <option value="Rejected">Rejected ✗</option>
+            </select>
+          </div>
+        </ng-container>
+
+        <!-- Editable fields for CTM / DataManager -->
+        <ng-container *ngIf="!isRegulatoryOfficer">
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input class="form-input" [(ngModel)]="editForm.title" maxlength="300">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-select" [(ngModel)]="editForm.category">
+              <option *ngFor="let c of categories" [value]="c.value">{{ c.label }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Version</label>
+            <input class="form-input" [(ngModel)]="editForm.version" maxlength="20">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea class="form-textarea" [(ngModel)]="editForm.notes" rows="3" maxlength="1000"></textarea>
+          </div>
+        </ng-container>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeEdit()" [disabled]="editSubmitting">Cancel</button>
+        <button class="btn-primary" (click)="submitEdit()" [disabled]="editSubmitting">
+          {{ editSubmitting ? 'Saving…' : 'Save' }}
         </button>
       </div>
     </div>

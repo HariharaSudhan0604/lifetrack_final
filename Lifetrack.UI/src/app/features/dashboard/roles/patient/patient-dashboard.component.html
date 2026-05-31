@@ -1,24 +1,71 @@
 <main class="pat-dash">
 
-  <!-- ── Page Header (NOT a navbar — just a clean title row) ─────────────── -->
+  <!-- ── Page Header ───────────────────────────────────────────────────────── -->
   <div class="pat-header">
     <div class="pat-header-left">
       <p class="pat-greeting">Welcome back, {{ firstName }}</p>
       <p class="pat-sub">{{ activeStudyName }} &nbsp;·&nbsp; {{ today | date:'EEEE, d MMMM' }}</p>
     </div>
-    <div class="pat-header-stats" *ngIf="!loading && !noPatientRecord">
-      <div class="pat-stat">
-        <p class="pat-stat-value">{{ statsActiveEnrollments }}</p>
-        <p class="pat-stat-label">Active trials</p>
+    <div class="dash-header-right">
+      <div class="notif-bell-wrap">
+        <div class="notif-backdrop" *ngIf="showNotifPanel" (click)="showNotifPanel = false"></div>
+        <button class="hdr-btn" [class.hdr-btn-notif]="statsNotifications > 0"
+                (click)="showNotifPanel = !showNotifPanel">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span *ngIf="statsNotifications > 0">{{ statsNotifications }} new</span>
+          <span *ngIf="statsNotifications === 0">Notifications</span>
+          <span *ngIf="statsNotifications > 0" class="notif-dot notif-dot-blue"></span>
+        </button>
+        <div class="notif-dropdown" *ngIf="showNotifPanel">
+          <div class="notif-drop-hdr">
+            <span class="notif-drop-title">Notifications</span>
+            <span class="notif-count-badge" *ngIf="statsNotifications > 0">{{ statsNotifications }} unread</span>
+          </div>
+          <div *ngIf="loading" class="notif-drop-empty"><div class="spinner-sm"></div></div>
+          <div *ngIf="!loading && notifications.length === 0" class="notif-drop-empty">No notifications yet.</div>
+          <div class="notif-drop-list" *ngIf="!loading && notifications.length > 0">
+            <div class="notif-drop-item" *ngFor="let n of notifications | slice:0:10"
+                 [class.notif-drop-unread]="n.status === 'Unread'">
+              <div class="notif-drop-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <div class="notif-drop-body">
+                <p class="notif-drop-msg">{{ n.message }}</p>
+                <p class="notif-drop-meta">{{ n.createdDate | date:'MMM d, h:mm a' }}
+                  <span class="notif-drop-cat">{{ n.category }}</span>
+                </p>
+                <button class="notif-mark-read-btn" *ngIf="n.status === 'Unread'"
+                        (click)="markNotificationRead(n); $event.stopPropagation()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Mark as read
+                </button>
+              </div>
+              <span class="notif-dot-sm" *ngIf="n.status === 'Unread'"></span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="pat-stat">
-        <p class="pat-stat-value">{{ statsUpcomingVisits }}</p>
-        <p class="pat-stat-label">Upcoming visits</p>
-      </div>
-      <div class="pat-stat">
-        <p class="pat-stat-value" [class.pat-stat-warn]="statsNotifications > 0">{{ statsNotifications }}</p>
-        <p class="pat-stat-label">Messages</p>
-      </div>
+    </div>
+  </div>
+
+  <!-- ── KPI Strip ──────────────────────────────────────────────────────────── -->
+  <div class="kpi-strip" *ngIf="!loading && !noPatientRecord">
+    <div class="kpi-card">
+      <p class="kpi-label">Active trials</p>
+      <p class="kpi-value">{{ statsActiveEnrollments }}</p>
+      <p class="kpi-note" *ngIf="!detailsLoading">{{ statsEnrollments }} total enrollments</p>
+    </div>
+    <div class="kpi-card">
+      <p class="kpi-label">Upcoming visits</p>
+      <p class="kpi-value" [class.kpi-warn]="statsUpcomingVisits > 0">{{ statsUpcomingVisits }}</p>
+      <p class="kpi-note" *ngIf="!detailsLoading && nextVisit">Next: {{ nextVisit.visitDate | date:'MMM d' }}</p>
+      <p class="kpi-note" *ngIf="!detailsLoading && !nextVisit">None scheduled</p>
+    </div>
+    <div class="kpi-card">
+      <p class="kpi-label">Notifications</p>
+      <p class="kpi-value" [class.kpi-warn]="statsNotifications > 0">{{ statsNotifications }}</p>
+      <p class="kpi-note kpi-note-warn" *ngIf="statsNotifications > 0">Unread</p>
+      <p class="kpi-note" *ngIf="statsNotifications === 0">All read</p>
     </div>
   </div>
 
@@ -51,17 +98,10 @@
           <p class="pat-hero-date">{{ nextVisit.visitDate | date:'EEE, d MMM' }}</p>
           <p class="pat-hero-time">{{ nextVisit.visitDate | date:'h:mm a' }}</p>
           <p class="pat-hero-meta">{{ visitProtocolName(nextVisit.enrollmentID) }}</p>
-
-          <div class="pat-row-btns">
-            <button class="pat-btn-outline">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Directions
-            </button>
-            <button class="pat-btn-outline">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              Reschedule
-            </button>
-          </div>
+          <p class="pat-hero-site">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;opacity:0.6"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            {{ visitSiteName(nextVisit.enrollmentID) }}
+          </p>
         </ng-container>
 
         <ng-container *ngIf="!detailsLoading && !nextVisit">
@@ -72,16 +112,23 @@
 
       <!-- Right side: stack of two small cards -->
       <div class="pat-hero-right">
-        <!-- Daily Check-in -->
-        <div class="pat-action-card pat-action-green">
-          <div class="pat-action-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <!-- Daily Quote -->
+        <div class="pat-quote-card">
+          <!-- Header: icon + label -->
+          <div class="pat-quote-top">
+            <div class="pat-quote-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <span class="pat-quote-label">Quote of the Day</span>
           </div>
-          <div class="pat-action-body">
-            <p class="pat-action-title">Daily check-in</p>
-            <p class="pat-action-sub">Takes 30 seconds</p>
+
+          <!-- Quote body with left-border accent -->
+          <div class="pat-quote-body">
+            <p class="pat-quote-text">
+              <span class="pat-quote-mark">&ldquo;</span>{{ dailyQuote.text }}&rdquo;
+            </p>
+            <p class="pat-quote-author">— {{ dailyQuote.author }}</p>
           </div>
-          <button class="pat-action-btn">Start</button>
         </div>
 
         <!-- Report Symptom -->
@@ -93,7 +140,7 @@
             <p class="pat-action-title">Not feeling well?</p>
             <p class="pat-action-sub">Report a symptom</p>
           </div>
-          <button class="pat-action-btn">Report</button>
+          <button class="pat-action-btn" (click)="openSymptomModal()">Report</button>
         </div>
       </div>
     </div>
@@ -147,7 +194,13 @@
               </div>
               <div class="pat-list-body">
                 <p class="pat-list-title">{{ visitProtocolName(v.enrollmentID) }}</p>
-                <p class="pat-list-meta">{{ v.visitDate | date:'EEE · h:mm a' }}</p>
+                <p class="pat-list-meta">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;opacity:0.55"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                  {{ visitSiteName(v.enrollmentID) }}
+                  &nbsp;·&nbsp;
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;opacity:0.55"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  {{ v.visitDate | date:'EEE, MMM d · h:mm a' }}
+                </p>
               </div>
               <span class="pat-pill" [ngClass]="visitStatusClass(v.status)">{{ v.status }}</span>
             </div>
@@ -158,27 +211,6 @@
 
       <!-- RIGHT: Messages + reported symptoms -->
       <div class="pat-col">
-
-        <!-- Messages -->
-        <div class="pat-card">
-          <div class="pat-card-hdr">
-            <span class="pat-card-title">Messages</span>
-            <span class="pat-card-badge pat-card-badge-blue" *ngIf="!loading && statsNotifications > 0">{{ statsNotifications }} new</span>
-          </div>
-
-          <div *ngIf="loading" class="pat-loading"><div class="pat-spinner"></div></div>
-          <div *ngIf="!loading && notifications.length === 0" class="pat-empty">No messages yet.</div>
-
-          <div *ngIf="!loading && notifications.length > 0">
-            <div class="pat-msg-item" *ngFor="let n of notifications | slice:0:4; let last = last" [class.pat-no-border]="last">
-              <div class="pat-msg-avatar">{{ messageAvatar(n) }}</div>
-              <div class="pat-list-body">
-                <p class="pat-list-title">{{ n.category ?? 'System' }}</p>
-                <p class="pat-list-meta">{{ n.message }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <!-- Reported symptoms / Adverse events -->
         <div class="pat-card" *ngIf="!detailsLoading && adverseEvents.length > 0">
@@ -199,15 +231,135 @@
           </div>
         </div>
 
-        <!-- Trial Info card -->
-        <div class="pat-card pat-info-card">
-          <p class="pat-card-title" style="margin:0 0 8px">Your trial coordinator</p>
-          <p class="pat-card-info">Reach out anytime with questions about your study, medications, or visit logistics.</p>
-          <p class="pat-card-info-meta">Patient ID #{{ patientRecord?.patientID }} &nbsp;·&nbsp; {{ patientRecord?.contactInfo || 'No contact info on file' }}</p>
+        <!-- Investigator Details card -->
+        <div class="pat-card pat-inv-card">
+
+          <!-- Card header -->
+          <div class="pat-card-hdr" style="margin-bottom:14px">
+            <span class="pat-card-title">Investigator Details</span>
+            <span class="pat-card-badge pat-card-badge-blue" *ngIf="!investigatorLoading && investigatorInfo">Active</span>
+          </div>
+
+          <!-- Loading state -->
+          <div *ngIf="investigatorLoading" class="pat-loading">
+            <div class="pat-spinner"></div>
+            <span>Loading investigator info…</span>
+          </div>
+
+          <!-- Not assigned / error -->
+          <div *ngIf="!investigatorLoading && investigatorNotAssigned" class="pat-inv-unassigned">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <p>No investigator assigned yet.</p>
+            <span>Please contact your trial coordinator for assistance.</span>
+          </div>
+
+          <!-- Loaded — show investigator profile (compact single row) -->
+          <ng-container *ngIf="!investigatorLoading && investigatorInfo">
+
+            <div class="pat-inv-row">
+              <!-- Avatar -->
+              <div class="pat-inv-avatar">{{ investigatorInitial }}</div>
+
+              <!-- Name + role -->
+              <div class="pat-inv-meta">
+                <p class="pat-inv-name">{{ investigatorName }}</p>
+                <span class="pat-inv-role-badge">Investigator</span>
+              </div>
+
+              <!-- Contact inline -->
+              <div class="pat-inv-contacts-inline">
+                <a class="pat-inv-inline-contact" *ngIf="investigatorEmail" [href]="'mailto:' + investigatorEmail">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  {{ investigatorEmail }}
+                </a>
+                <a class="pat-inv-inline-contact" *ngIf="investigatorPhone" [href]="'tel:' + investigatorPhone">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  {{ investigatorPhone }}
+                </a>
+              </div>
+            </div>
+
+          </ng-container>
         </div>
 
       </div>
     </div>
   </ng-container>
+
+  <!-- ── Report Symptom Modal ─────────────────────────────────────────── -->
+  <div class="sym-overlay" *ngIf="showSymptomModal" (click)="closeSymptomModal()">
+    <div class="sym-box" (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="sym-header">
+        <div class="sym-header-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2" ry="2"/><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+        </div>
+        <div>
+          <h2 class="sym-title">Report a symptom</h2>
+          <p class="sym-sub">Your investigator will be notified immediately</p>
+        </div>
+        <button class="sym-close" (click)="closeSymptomModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="sym-body">
+        <div class="sym-alert sym-alert-success" *ngIf="symptomSuccess">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          {{ symptomSuccess }}
+        </div>
+        <div class="sym-alert sym-alert-error" *ngIf="symptomError">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#991b1b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ symptomError }}
+        </div>
+
+        <form (ngSubmit)="submitSymptom()" *ngIf="!symptomSuccess">
+          <!-- Trial / enrollment select -->
+          <div class="sym-group">
+            <label class="sym-label">
+              Which trial are you reporting for? <span class="sym-required">*</span>
+            </label>
+            <select class="sym-select" [(ngModel)]="symptomForm.enrollmentID" name="enrollmentID"
+              [class.sym-input-err]="symptomFormErrors['enrollmentID']">
+              <option value="">-- Select a trial --</option>
+              <option *ngFor="let e of enrollments" [value]="e.enrollmentID">
+                {{ enrollmentLabel(e) }}
+              </option>
+            </select>
+            <span class="sym-err" *ngIf="symptomFormErrors['enrollmentID']">{{ symptomFormErrors['enrollmentID'] }}</span>
+          </div>
+
+          <!-- Symptom description -->
+          <div class="sym-group">
+            <label class="sym-label">
+              Describe your symptom <span class="sym-required">*</span>
+            </label>
+            <textarea class="sym-textarea" rows="4"
+              [(ngModel)]="symptomForm.description" name="description"
+              placeholder="E.g. Mild headache and nausea since this morning…"
+              [class.sym-input-err]="symptomFormErrors['description']"></textarea>
+            <div class="sym-field-footer">
+              <span class="sym-err" *ngIf="symptomFormErrors['description']">{{ symptomFormErrors['description'] }}</span>
+              <span class="sym-hint" *ngIf="!symptomFormErrors['description'] && symptomForm.description.length > 0">
+                {{ symptomForm.description.length }}/1000
+              </span>
+            </div>
+          </div>
+
+          <!-- Footer actions -->
+          <div class="sym-footer">
+            <button type="button" class="sym-btn-cancel" (click)="closeSymptomModal()" [disabled]="symptomSubmitting">Cancel</button>
+            <button type="submit" class="sym-btn-submit" [disabled]="symptomSubmitting">
+              <svg *ngIf="!symptomSubmitting" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              {{ symptomSubmitting ? 'Sending…' : 'Send report' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
 
 </main>

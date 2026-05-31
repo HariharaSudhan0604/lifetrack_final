@@ -1,10 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { NavigationService } from '../../../../../../core/services/navigation.service';
 import { environment } from '../../../../../../../environments/environment';
+
+/** End date must be on or after start date (both optional individually). */
+function dateRangeValidator(group: AbstractControl): ValidationErrors | null {
+  const start = group.get('startDate')?.value;
+  const end   = group.get('endDate')?.value;
+  if (start && end && end < start) {
+    return { dateRange: 'End date must be on or after start date.' };
+  }
+  return null;
+}
 
 @Component({
   selector: 'app-ctm-protocols-page',
@@ -12,7 +22,7 @@ import { environment } from '../../../../../../../environments/environment';
   templateUrl: './ctm-protocols-page.component.html',
   styleUrls: ['./ctm-protocols-page.component.css']
 })
-export class CtmProtocolsPageComponent implements OnInit {
+export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
 
   // ── List state ─────────────────────────────────────────────────────────────
   protocolList: any[] = [];
@@ -23,12 +33,10 @@ export class CtmProtocolsPageComponent implements OnInit {
   listTotalPages  = 1;
   searchTerm      = '';
   filterStatus    = '';
-  filterPhase     = '';
   private searchTimer: any;
 
   readonly phases   = ['Preclinical', 'Phase1', 'Phase2', 'Phase3', 'Phase4'];
   readonly statuses = ['Draft', 'Active', 'Paused', 'Completed', 'Terminated'];
-  readonly assignStatuses = ['Pending', 'Active', 'Suspended', 'Completed'];
 
   // ── Create modal ───────────────────────────────────────────────────────────
   showCreateModal  = false;
@@ -38,12 +46,20 @@ export class CtmProtocolsPageComponent implements OnInit {
   createSuccess    = false;
 
   // ── Edit modal ─────────────────────────────────────────────────────────────
-  showEditModal  = false;
-  editingItem: any = null;
+  showEditModal               = false;
+  editingItem: any            = null;
   editForm!: FormGroup;
-  editSubmitting = false;
-  editError      = '';
-  editSuccess    = false;
+  editSubmitting              = false;
+  editError                   = '';
+  editSuccess                 = false;
+  editProtocolHasAssignments  = false;
+  editCheckingAssignments     = false;
+
+  // ── Delete modal ───────────────────────────────────────────────────────────
+  showDeleteConfirm = false;
+  deletingItem: any = null;
+  deleteLoading     = false;
+  deleteError       = '';
 
   // ── Assign modal ───────────────────────────────────────────────────────────
   showAssignModal    = false;
@@ -56,6 +72,8 @@ export class CtmProtocolsPageComponent implements OnInit {
   investigatorOptions: any[] = [];
   dropdownsLoading           = false;
 
+  readonly assignStatuses = ['Pending', 'Active', 'Suspended', 'Completed'];
+
   constructor(
     private http: HttpClient,
     private fb: FormBuilder,
@@ -65,24 +83,23 @@ export class CtmProtocolsPageComponent implements OnInit {
 
   ngOnInit() {
     this.createForm = this.fb.group({
-      title:     ['', [Validators.required, Validators.maxLength(300)]],
-      phase:     ['', Validators.required],
+      title:     ['', [Validators.required, Validators.minLength(3), Validators.maxLength(300)]],
       startDate: ['', Validators.required],
       endDate:   [''],
       status:    ['Draft', Validators.required]
-    });
+    }, { validators: dateRangeValidator });
 
     this.editForm = this.fb.group({
-      title:     ['', [Validators.required, Validators.maxLength(300)]],
-      phase:     ['', Validators.required],
+      title:     ['', [Validators.required, Validators.minLength(3), Validators.maxLength(300)]],
       startDate: ['', Validators.required],
       endDate:   [''],
       status:    ['', Validators.required]
-    });
+    }, { validators: dateRangeValidator });
 
     this.assignForm = this.fb.group({
       siteID:         ['', Validators.required],
       investigatorID: ['', Validators.required],
+      phase:          ['', Validators.required],
       initiationDate: [''],
       status:         ['Pending', Validators.required]
     });
@@ -102,7 +119,8 @@ export class CtmProtocolsPageComponent implements OnInit {
   onFilterChange() { this.loadProtocols(1); }
 
   clearFilters() {
-    this.searchTerm = ''; this.filterStatus = ''; this.filterPhase = '';
+    this.searchTerm = '';
+    this.filterStatus = '';
     this.loadProtocols(1);
   }
 
@@ -113,7 +131,6 @@ export class CtmProtocolsPageComponent implements OnInit {
     const qs = new URLSearchParams({ page: String(page), pageSize: String(this.listPageSize) });
     if (this.searchTerm.trim()) qs.set('search', this.searchTerm.trim());
     if (this.filterStatus) qs.set('status', this.filterStatus);
-    if (this.filterPhase)  qs.set('phase', this.filterPhase);
 
     this.http.get<any>(`${environment.apiUrl}/protocols?${qs}`).subscribe({
       next: r => {
@@ -150,14 +167,20 @@ export class CtmProtocolsPageComponent implements OnInit {
     if (this.createForm.invalid) { this.createForm.markAllAsTouched(); return; }
     this.createSubmitting = true; this.createError = '';
     const v = this.createForm.value;
-    const body: any = { title: v.title.trim(), phase: v.phase, startDate: v.startDate, status: v.status };
+    const body: any = {
+      title: v.title.trim(),
+      startDate: v.startDate, status: v.status
+    };
     if (v.endDate) body.endDate = v.endDate;
 
     this.http.post(`${environment.apiUrl}/protocols`, body).subscribe({
       next: () => {
         this.createSubmitting = false; this.createSuccess = true;
         this.listTotalCount++;
-        setTimeout(() => { this.showCreateModal = false; this.createSuccess = false; this.loadProtocols(this.listPage); }, 1500);
+        setTimeout(() => {
+          this.showCreateModal = false; this.createSuccess = false;
+          this.loadProtocols(this.listPage);
+        }, 1500);
       },
       error: err => {
         this.createSubmitting = false;
@@ -168,15 +191,30 @@ export class CtmProtocolsPageComponent implements OnInit {
 
   // ── Edit ───────────────────────────────────────────────────────────────────
   openEditModal(p: any) {
-    this.editingItem = p;
+    this.editingItem                = p;
+    this.editProtocolHasAssignments = false;
+    this.editCheckingAssignments    = true;
     this.editForm.patchValue({
-      title: p.title, phase: p.phase,
+      title:     p.title,
       startDate: this.toDateInput(p.startDate),
       endDate:   p.endDate ? this.toDateInput(p.endDate) : '',
-      status: p.status
+      status:    p.status
     });
     this.editError = ''; this.editSuccess = false;
     this.showEditModal = true;
+
+    // Check if this protocol has any site assignments to decide whether "Terminated" is allowed
+    this.http.get<any>(`${environment.apiUrl}/site-protocols?protocolId=${p.protocolID}&pageSize=1`).subscribe({
+      next: r => {
+        this.editProtocolHasAssignments = (r.totalCount ?? 0) > 0;
+        this.editCheckingAssignments    = false;
+        // Allow keeping an existing "Terminated" status unchanged
+        if (this.editProtocolHasAssignments && this.editForm.get('status')?.value === 'Terminated') {
+          this.editProtocolHasAssignments = false;
+        }
+      },
+      error: () => { this.editCheckingAssignments = false; }
+    });
   }
 
   closeEditModal() {
@@ -188,7 +226,10 @@ export class CtmProtocolsPageComponent implements OnInit {
     if (this.editForm.invalid) { this.editForm.markAllAsTouched(); return; }
     this.editSubmitting = true; this.editError = '';
     const v = this.editForm.value;
-    const body: any = { title: v.title.trim(), phase: v.phase, startDate: v.startDate, status: v.status };
+    const body: any = {
+      title: v.title.trim(),
+      startDate: v.startDate, status: v.status
+    };
     if (v.endDate) body.endDate = v.endDate;
 
     this.http.put<any>(`${environment.apiUrl}/protocols/${this.editingItem.protocolID}`, body).subscribe({
@@ -196,11 +237,41 @@ export class CtmProtocolsPageComponent implements OnInit {
         this.editSubmitting = false; this.editSuccess = true;
         const idx = this.protocolList.findIndex(p => p.protocolID === this.editingItem.protocolID);
         if (idx > -1) this.protocolList[idx] = updated;
-        setTimeout(() => { this.showEditModal = false; this.editSuccess = false; this.editingItem = null; }, 1500);
+        setTimeout(() => {
+          this.showEditModal = false; this.editSuccess = false; this.editingItem = null;
+        }, 1500);
       },
       error: err => {
         this.editSubmitting = false;
         this.editError = err?.error?.error ?? err?.error?.message ?? 'Failed to update protocol.';
+      }
+    });
+  }
+
+  // ── Delete ─────────────────────────────────────────────────────────────────
+  openDeleteConfirm(p: any) {
+    this.deletingItem = p; this.deleteError = '';
+    this.showDeleteConfirm = true;
+  }
+
+  closeDeleteConfirm() {
+    if (this.deleteLoading) return;
+    this.showDeleteConfirm = false; this.deletingItem = null;
+  }
+
+  confirmDelete() {
+    if (!this.deletingItem) return;
+    this.deleteLoading = true; this.deleteError = '';
+    this.http.delete(`${environment.apiUrl}/protocols/${this.deletingItem.protocolID}`).subscribe({
+      next: () => {
+        this.deleteLoading = false; this.showDeleteConfirm = false; this.deletingItem = null;
+        this.listTotalCount = Math.max(0, this.listTotalCount - 1);
+        const newPages   = Math.ceil(this.listTotalCount / this.listPageSize) || 1;
+        this.loadProtocols(this.listPage > newPages ? newPages : this.listPage);
+      },
+      error: err => {
+        this.deleteLoading = false;
+        this.deleteError = err?.error?.error ?? err?.error?.message ?? 'Failed to delete protocol.';
       }
     });
   }
@@ -242,6 +313,7 @@ export class CtmProtocolsPageComponent implements OnInit {
       protocolID:     this.assigningProtocol.protocolID,
       siteID:         Number(v.siteID),
       investigatorID: Number(v.investigatorID),
+      phase:          v.phase,
       status:         v.status
     };
     if (v.initiationDate) body.initiationDate = v.initiationDate;
@@ -283,7 +355,9 @@ export class CtmProtocolsPageComponent implements OnInit {
     return m[s] ?? 'badge-slate';
   }
 
-  toDateInput(iso: string): string { return iso ? iso.substring(0, 10) : ''; }
+  toDateInput(iso: string): string {
+    return iso ? iso.substring(0, 10) : '';
+  }
 
   cf(n: string) { return this.createForm.get(n)!; }
   ef(n: string) { return this.editForm.get(n)!; }
@@ -291,8 +365,20 @@ export class CtmProtocolsPageComponent implements OnInit {
 
   fieldErr(ctrl: any): string {
     if (!ctrl.touched || ctrl.valid) return '';
-    if (ctrl.errors?.['required'])  return 'Required.';
-    if (ctrl.errors?.['maxlength']) return `Max ${ctrl.errors['maxlength'].requiredLength} characters.`;
+    if (ctrl.errors?.['required'])  return 'This field is required.';
+    if (ctrl.errors?.['minlength']) return `Minimum ${ctrl.errors['minlength'].requiredLength} characters required.`;
+    if (ctrl.errors?.['maxlength']) return `Maximum ${ctrl.errors['maxlength'].requiredLength} characters allowed.`;
     return 'Invalid value.';
+  }
+
+  /** Returns the cross-field date-range error message for a form, or empty string. */
+  dateRangeErr(form: FormGroup): string {
+    const touched = form.get('startDate')?.touched || form.get('endDate')?.touched;
+    if (!touched) return '';
+    return form.errors?.['dateRange'] ?? '';
+  }
+
+  ngOnDestroy(): void {
+    clearTimeout(this.searchTimer);
   }
 }

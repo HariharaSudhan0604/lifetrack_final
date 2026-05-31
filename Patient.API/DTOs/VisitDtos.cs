@@ -10,8 +10,8 @@ public record CreateVisitRequest(
     [MaxLength(1000)] string? Notes
 );
 
+// EnrollmentID intentionally omitted — the linked enrollment cannot change after creation.
 public record UpdateVisitRequest(
-    [Required] long EnrollmentID,
     [Required] DateTime VisitDate,
     [Required, MaxLength(50)] string Status,
     [MaxLength(1000)] string? Notes

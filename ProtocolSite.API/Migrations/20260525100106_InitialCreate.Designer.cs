@@ -12,7 +12,7 @@ using ProtocolSite.API.Data;
 namespace ProtocolSite.API.Migrations
 {
     [DbContext(typeof(ProtocolSiteDbContext))]
-    [Migration("20260518092047_InitialCreate")]
+    [Migration("20260525100106_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

@@ -23,6 +23,9 @@ public class EnrollmentRepository : IEnrollmentRepository
         return (items, total);
     }
 
+    public Task<bool> ExistsAsync(long patientId, long siteProtocolId) =>
+        _db.Enrollments.AnyAsync(e => e.PatientID == patientId && e.SiteProtocolID == siteProtocolId);
+
     public async Task<Enrollment> AddAsync(Enrollment enrollment)
     { _db.Enrollments.Add(enrollment); await _db.SaveChangesAsync(); return enrollment; }
 

@@ -29,6 +29,7 @@ import { CtmReportsPageComponent }         from './roles/ctm/pages/ctm-reports-p
 
 // ── Investigator ──────────────────────────────────────────────────────────────
 import { InvestigatorDashboardComponent }           from './roles/investigator/investigator-dashboard.component';
+import { InvestigatorAssignmentsPageComponent }     from './roles/investigator/pages/assignments/investigator-assignments-page.component';
 import { InvestigatorEnrollmentsPageComponent }     from './roles/investigator/pages/investigator-enrollments-page.component';
 import { InvestigatorVisitsPageComponent }          from './roles/investigator/pages/investigator-visits-page.component';
 import { InvestigatorAdverseEventsPageComponent }   from './roles/investigator/pages/investigator-adverse-events-page/investigator-adverse-events-page.component';
@@ -115,13 +116,13 @@ const routes: Routes = [
         path: 'documents',
         component: CtmDocumentsPageComponent,
         canActivate: [RoleGuard],
-        data: { title: 'Documents', roles: ['ClinicalTrialManager', 'RegulatoryOfficer'] }
+        data: { title: 'Documents', roles: ['ClinicalTrialManager', 'RegulatoryOfficer', 'DataManager'] }
       },
       {
         path: 'reports',
         component: CtmReportsPageComponent,
         canActivate: [RoleGuard],
-        data: { title: 'KPI Reports', roles: ['ClinicalTrialManager', 'DataManager'] }
+        data: { title: 'KPI Reports', roles: ['ClinicalTrialManager', 'DataManager', 'RegulatoryOfficer'] }
       },
       {
         path: 'adverse-events',
@@ -134,6 +135,12 @@ const routes: Routes = [
         component: AdminAuditLogsPageComponent,
         canActivate: [RoleGuard],
         data: { title: 'Audit Logs', roles: ['Admin', 'RegulatoryOfficer'] }
+      },
+      {
+        path: 'my-assignments',
+        component: InvestigatorAssignmentsPageComponent,
+        canActivate: [RoleGuard],
+        data: { title: 'My Assignments', roles: ['Investigator'] }
       },
       {
         path: 'enrollments',
@@ -151,7 +158,7 @@ const routes: Routes = [
         path: 'deviations',
         component: InvestigatorDeviationsPageComponent,
         canActivate: [RoleGuard],
-        data: { title: 'Protocol Deviations', roles: ['Investigator', 'DataManager'] }
+        data: { title: 'Protocol Deviations', roles: ['Investigator', 'DataManager', 'RegulatoryOfficer', 'ClinicalTrialManager'] }
       },
     ]
   }
@@ -180,6 +187,7 @@ const routes: Routes = [
     CtmReportsPageComponent,
     // Investigator
     InvestigatorDashboardComponent,
+    InvestigatorAssignmentsPageComponent,
     InvestigatorEnrollmentsPageComponent,
     InvestigatorVisitsPageComponent,
     InvestigatorAdverseEventsPageComponent,

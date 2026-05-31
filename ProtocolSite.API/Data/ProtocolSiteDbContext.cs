@@ -1,18 +1,35 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using ProtocolSite.API.Models;
 namespace ProtocolSite.API.Data;
 
 public class ProtocolSiteDbContext : DbContext
 {
-    public ProtocolSiteDbContext(DbContextOptions<ProtocolSiteDbContext> options) : base(options) { }
+    private readonly IHttpContextAccessor? _httpCtx;
+
+    public ProtocolSiteDbContext(
+        DbContextOptions<ProtocolSiteDbContext> options,
+        IHttpContextAccessor? httpCtx = null)
+        : base(options)
+    {
+        _httpCtx = httpCtx;
+    }
 
     public DbSet<Protocol> Protocols => Set<Protocol>();
     public DbSet<Site> Sites => Set<Site>();
     public DbSet<SiteProtocol> SiteProtocols => Set<SiteProtocol>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
-    /// <summary>Set this before SaveChangesAsync to stamp the current user on audit rows.</summary>
-    public long? CurrentUserID { get; set; }
+    /// <summary>Resolves the acting user ID from the JWT claim, or null for system operations.</summary>
+    private long? CurrentUserID
+    {
+        get
+        {
+            var raw = _httpCtx?.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            return long.TryParse(raw, out var id) ? id : null;
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -20,10 +37,8 @@ public class ProtocolSiteDbContext : DbContext
         {
             b.HasKey(p => p.ProtocolID);
             b.Property(p => p.Title).HasMaxLength(300).IsRequired();
-            b.Property(p => p.Phase).HasMaxLength(50).IsRequired();
             b.Property(p => p.Status).HasMaxLength(50).IsRequired();
             b.HasIndex(p => p.Status);
-            b.HasIndex(p => p.Phase);
         });
 
         modelBuilder.Entity<Site>(b =>
@@ -38,10 +53,12 @@ public class ProtocolSiteDbContext : DbContext
         modelBuilder.Entity<SiteProtocol>(b =>
         {
             b.HasKey(sp => sp.SiteProtocolID);
+            b.Property(sp => sp.Phase).HasMaxLength(50).IsRequired();
             b.Property(sp => sp.Status).HasMaxLength(50).IsRequired();
             b.HasIndex(sp => sp.SiteID);
             b.HasIndex(sp => sp.ProtocolID);
             b.HasIndex(sp => sp.InvestigatorID);
+            b.HasIndex(sp => sp.Phase);
             b.HasIndex(sp => sp.Status);
             b.HasOne(sp => sp.Site)
              .WithMany(s => s.SiteProtocols)

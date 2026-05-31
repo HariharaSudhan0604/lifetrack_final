@@ -20,13 +20,13 @@ public class KpiReportService : IKpiReportService
         _cache = cache;
     }
 
-    public async Task<PagedResult<KpiReportResponse>> ListAsync(string? scope, int page, int pageSize)
+    public async Task<PagedResult<KpiReportResponse>> ListAsync(string? scope, string? status, int page, int pageSize)
     {
         var v = GetVersion();
-        var key = $"kpi:list:v{v}:{scope}:{page}:{pageSize}";
+        var key = $"kpi:list:v{v}:{scope}:{status}:{page}:{pageSize}";
         if (_cache.TryGetValue(key, out PagedResult<KpiReportResponse>? cached) && cached is not null)
             return cached;
-        var (items, total) = await _repo.ListAsync(scope, page, pageSize);
+        var (items, total) = await _repo.ListAsync(scope, status, page, pageSize);
         var result = new PagedResult<KpiReportResponse>
         {
             Page = page,
@@ -54,11 +54,26 @@ public class KpiReportService : IKpiReportService
     {
         var report = new KpiReport
         {
-            Scope = req.Scope,
-            EnrollmentRate = req.EnrollmentRate,
-            DropoutRate = req.DropoutRate,
-            AECount = req.AECount,
-            GeneratedDate = req.GeneratedDate ?? DateTime.UtcNow
+            Scope               = req.Scope,
+            EnrollmentRate      = req.EnrollmentRate,
+            DropoutRate         = req.DropoutRate,
+            VisitComplianceRate = req.VisitComplianceRate,
+            PatientRetentionRate= req.PatientRetentionRate,
+            TotalProtocols      = req.TotalProtocols,
+            TotalPatients       = req.TotalPatients,
+            TotalEnrollments    = req.TotalEnrollments,
+            ActiveEnrollments   = req.ActiveEnrollments,
+            TotalVisits         = req.TotalVisits,
+            AECount             = req.AECount,
+            MildAEs             = req.MildAEs,
+            ModerateAEs         = req.ModerateAEs,
+            SevereAEs           = req.SevereAEs,
+            DevCount            = req.DevCount,
+            ReportedDevs        = req.ReportedDevs,
+            ResolvedDevs        = req.ResolvedDevs,
+            GeneratedDate       = req.GeneratedDate ?? DateTime.UtcNow,
+            StartDate           = req.StartDate,
+            EndDate             = req.EndDate
         };
         var created = await _repo.AddAsync(report);
         BumpVersion();
@@ -71,6 +86,23 @@ public class KpiReportService : IKpiReportService
     private void BumpVersion() =>
         _cache.Set(VersionKey, GetVersion() + 1, new MemoryCacheEntryOptions { Priority = CacheItemPriority.NeverRemove });
 
-    private static KpiReportResponse ToResponse(KpiReport r) =>
-        new(r.ReportID, r.Scope, r.EnrollmentRate, r.DropoutRate, r.AECount, r.GeneratedDate);
+    public async Task<KpiReportResponse?> ReviewAsync(long id)
+    {
+        var report = await _repo.GetByIdAsync(id);
+        if (report is null) return null;
+        report.Status     = "Reviewed";
+        report.ReviewedAt = DateTime.UtcNow;
+        await _repo.UpdateAsync(report);
+        BumpVersion();
+        return ToResponse(report);
+    }
+
+    private static KpiReportResponse ToResponse(KpiReport r) => new(
+        r.ReportID, r.Scope,
+        r.EnrollmentRate, r.DropoutRate, r.VisitComplianceRate, r.PatientRetentionRate,
+        r.TotalProtocols, r.TotalPatients, r.TotalEnrollments, r.ActiveEnrollments, r.TotalVisits,
+        r.AECount, r.MildAEs, r.ModerateAEs, r.SevereAEs,
+        r.DevCount, r.ReportedDevs, r.ResolvedDevs,
+        r.GeneratedDate, r.Status, r.ReviewedAt,
+        r.StartDate, r.EndDate);
 }

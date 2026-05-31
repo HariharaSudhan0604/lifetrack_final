@@ -38,24 +38,27 @@ public class AdverseEventsController : ControllerBase
 
     [HttpPost]
     [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.Investigator, RolesEnum.DataManager)]
-    public async Task<ActionResult<AdverseEventResponse>> Create([FromBody] CreateAdverseEventRequest req)
+    public async Task<ActionResult> Create([FromBody] CreateAdverseEventRequest req)
     {
         try
         {
             var created = await _svc.CreateAsync(req);
-            return CreatedAtAction(nameof(Get), new { id = created.EventID }, created);
+            // Return only the new ID — client constructs the row from its own payload
+            return StatusCode(201, new { eventID = created.EventID });
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
     [HttpPut("{id:long}")]
     [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.Investigator, RolesEnum.DataManager)]
-    public async Task<ActionResult<AdverseEventResponse>> Update(long id, [FromBody] UpdateAdverseEventRequest req)
+    public async Task<ActionResult> Update(long id, [FromBody] UpdateAdverseEventRequest req)
     {
         try
         {
             var updated = await _svc.UpdateAsync(id, req);
-            return updated is null ? NotFound() : Ok(updated);
+            if (updated is null) return NotFound();
+            // Client already holds the updated values — no need to echo them back
+            return NoContent();
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }

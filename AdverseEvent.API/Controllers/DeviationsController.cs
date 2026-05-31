@@ -37,24 +37,24 @@ public class DeviationsController : ControllerBase
 
     [HttpPost]
     [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.Investigator, RolesEnum.DataManager)]
-    public async Task<ActionResult<DeviationResponse>> Create([FromBody] CreateDeviationRequest req)
+    public async Task<ActionResult> Create([FromBody] CreateDeviationRequest req)
     {
         try
         {
             var created = await _svc.CreateAsync(req);
-            return CreatedAtAction(nameof(Get), new { id = created.DeviationID }, created);
+            return StatusCode(201, new { deviationID = created.DeviationID });
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
     [HttpPut("{id:long}")]
     [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.Investigator, RolesEnum.DataManager)]
-    public async Task<ActionResult<DeviationResponse>> Update(long id, [FromBody] UpdateDeviationRequest req)
+    public async Task<ActionResult> Update(long id, [FromBody] UpdateDeviationRequest req)
     {
         try
         {
             var updated = await _svc.UpdateAsync(id, req);
-            return updated is null ? NotFound() : Ok(updated);
+            return updated is null ? NotFound() : NoContent();
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }

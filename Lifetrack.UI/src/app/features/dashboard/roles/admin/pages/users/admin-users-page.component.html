@@ -157,7 +157,11 @@
           </div>
           <div class="form-group">
             <label class="form-label">Phone <span class="optional">(optional)</span></label>
-            <input type="tel" class="form-input" formControlName="phone" placeholder="+1-555-0100" />
+            <input type="tel" class="form-input" formControlName="phone" placeholder="9876543210"
+              [class.invalid]="cf('phone').touched && cf('phone').invalid" />
+            <span class="field-error" *ngIf="cf('phone').touched && cf('phone').hasError('phonePattern')">
+              Enter a valid 10-digit mobile number (e.g. 9876543210).
+            </span>
           </div>
         </div>
         <div class="form-group">
@@ -213,7 +217,11 @@
           </div>
           <div class="form-group">
             <label class="form-label">Phone <span class="optional">(optional)</span></label>
-            <input type="tel" class="form-input" formControlName="phone" placeholder="+1-555-0100" />
+            <input type="tel" class="form-input" formControlName="phone" placeholder="9876543210"
+              [class.invalid]="ef('phone').touched && ef('phone').invalid" />
+            <span class="field-error" *ngIf="ef('phone').touched && ef('phone').hasError('phonePattern')">
+              Enter a valid 10-digit mobile number (e.g. 9876543210).
+            </span>
           </div>
         </div>
         <div class="form-group">

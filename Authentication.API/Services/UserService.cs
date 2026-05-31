@@ -155,12 +155,12 @@ public class UserService : IUserService
 
     private static UserResponse Map(User u) => new()
     {
-        UserID = u.UserID,
-        Name = u.Name,
-        Email = u.Email,
-        RoleID = u.RoleID,
-        Role = u.RoleNavigation?.RoleName ?? GetRoleName(u.RoleID),
-        Phone = u.Phone,
+        UserID   = u.UserID,
+        Name     = u.Name,
+        Email    = u.Email,
+        RoleID   = u.RoleID,
+        Role     = u.RoleNavigation?.RoleName ?? GetRoleName(u.RoleID),
+        Phone    = u.Phone,
         IsActive = u.IsActive
     };
 }

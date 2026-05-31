@@ -1,177 +1,391 @@
-<div class="page-root">
+<div class="ar-root">
 
-  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
-  <div class="page-header">
-    <div class="header-left">
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <div class="ar-header">
+    <div class="ar-header-left">
       <button class="btn-back" (click)="goBack()">&#8592; Back</button>
       <div>
-        <h1 class="page-title">KPI Reports</h1>
-        <p class="page-subtitle">Trial performance analytics and enrollment metrics</p>
+        <h1 class="ar-title">Analytics &amp; Reports</h1>
+        <p class="ar-sub">Live trial insights and KPI report archive</p>
       </div>
     </div>
   </div>
 
-  <!-- ── Scope Filter ─────────────────────────────────────────────────────── -->
-  <div class="filter-bar">
-    <span class="filter-label">Scope</span>
-    <div class="scope-pills">
-      <button
-        *ngFor="let cat of scopeCategories"
-        class="scope-pill"
-        [class.active]="selectedScope === cat"
-        (click)="selectScope(cat)">
-        {{ cat }}
-      </button>
-    </div>
-    <span class="report-count" *ngIf="!loading">{{ filteredReports.length }} report{{ filteredReports.length !== 1 ? 's' : '' }}</span>
-  </div>
-
-  <!-- ── Error ────────────────────────────────────────────────────────────── -->
+  <!-- ── Error ───────────────────────────────────────────────────────────── -->
   <div class="alert-error" *ngIf="error">{{ error }}</div>
 
-  <!-- ── Loading ──────────────────────────────────────────────────────────── -->
+  <!-- ── Loading ─────────────────────────────────────────────────────────── -->
   <div class="loading-box" *ngIf="loading">
     <div class="spinner"></div>
-    <p>Loading KPI reports…</p>
+    <p>Loading analytics…</p>
   </div>
 
-  <!-- ── Summary Strip ────────────────────────────────────────────────────── -->
-  <div class="summary-strip" *ngIf="!loading && filteredReports.length > 0">
-    <div class="summary-card summary-enroll">
-      <div class="summary-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-      </div>
-      <div class="summary-body">
-        <span class="summary-label">Avg Enrollment Rate</span>
-        <span class="summary-value">{{ avgEnrollmentRate | number:'1.1-1' }}<span class="summary-unit">%</span></span>
-      </div>
-    </div>
-    <div class="summary-card summary-dropout">
-      <div class="summary-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
-      </div>
-      <div class="summary-body">
-        <span class="summary-label">Avg Dropout Rate</span>
-        <span class="summary-value">{{ avgDropoutRate | number:'1.1-1' }}<span class="summary-unit">%</span></span>
-      </div>
-    </div>
-    <div class="summary-card summary-ae">
-      <div class="summary-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      </div>
-      <div class="summary-body">
-        <span class="summary-label">Total Adverse Events</span>
-        <span class="summary-value">{{ totalAEs }}</span>
-      </div>
-    </div>
-    <div class="summary-card summary-reports">
-      <div class="summary-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
-      </div>
-      <div class="summary-body">
-        <span class="summary-label">Reports in View</span>
-        <span class="summary-value">{{ filteredReports.length }}</span>
-      </div>
-    </div>
-  </div>
+  <ng-container *ngIf="!loading">
 
-  <!-- ── Table ─────────────────────────────────────────────────────────────── -->
-  <div class="table-card" *ngIf="!loading && filteredReports.length > 0">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th class="col-num">#</th>
-          <th>Report</th>
-          <th>Scope</th>
-          <th class="col-rate">Enrollment Rate</th>
-          <th class="col-rate">Dropout Rate</th>
-          <th class="col-ae">AE Count</th>
-          <th class="col-date">Generated</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let r of filteredReports; let i = index">
-          <td class="col-num cell-muted">{{ i + 1 }}</td>
+    <!-- ══════════════════════════════════════════════════════════════════════
+         LIVE OVERVIEW
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div class="ar-section-header">
+      <span class="ar-section-title">Live Overview</span>
+      <span class="ar-section-note">Computed from live data</span>
+    </div>
 
-          <td>
-            <span class="report-id">Report #{{ r.reportID }}</span>
-          </td>
+    <!-- ── 4 KPI Cards ──────────────────────────────────────────────────── -->
+    <div class="ar-kpi-strip">
 
-          <td>
-            <span class="badge" [ngClass]="scopeClass(r.scope)">{{ r.scope }}</span>
-          </td>
+      <div class="ar-kpi-card ar-kpi-purple">
+        <div class="ar-kpi-body">
+          <p class="ar-kpi-label">TOTAL PROTOCOLS</p>
+          <p class="ar-kpi-value">{{ totalProtocols }}</p>
+          <p class="ar-kpi-note">registered</p>
+        </div>
+        <div class="ar-kpi-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+      </div>
 
-          <!-- Enrollment Rate -->
-          <td class="col-rate">
-            <div class="rate-cell">
-              <div class="rate-header">
-                <span class="rate-value"
-                  [class.rate-great]="r.enrollmentRate >= 75"
-                  [class.rate-good]="r.enrollmentRate >= 50 && r.enrollmentRate < 75"
-                  [class.rate-poor]="r.enrollmentRate < 50">
-                  {{ r.enrollmentRate | number:'1.1-1' }}%
-                </span>
-                <span class="rate-chip"
-                  [class.rate-great]="r.enrollmentRate >= 75"
-                  [class.rate-good]="r.enrollmentRate >= 50 && r.enrollmentRate < 75"
-                  [class.rate-poor]="r.enrollmentRate < 50">
-                  {{ r.enrollmentRate >= 75 ? 'High' : r.enrollmentRate >= 50 ? 'Mid' : 'Low' }}
-                </span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-fill enroll-fill"
-                  [style.width]="cap(r.enrollmentRate) + '%'"></div>
+      <div class="ar-kpi-card ar-kpi-green">
+        <div class="ar-kpi-body">
+          <p class="ar-kpi-label">ACTIVE ENROLLMENTS</p>
+          <p class="ar-kpi-value">{{ activeEnrollments }}</p>
+          <p class="ar-kpi-note">of {{ totalEnrollments }} total</p>
+        </div>
+        <div class="ar-kpi-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+      </div>
+
+      <div class="ar-kpi-card ar-kpi-blue">
+        <div class="ar-kpi-body">
+          <p class="ar-kpi-label">UPCOMING VISITS</p>
+          <p class="ar-kpi-value">{{ upcomingVisits }}</p>
+          <p class="ar-kpi-note">{{ visitComplianceRate }}% compliance rate</p>
+        </div>
+        <div class="ar-kpi-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+      </div>
+
+      <div class="ar-kpi-card ar-kpi-amber">
+        <div class="ar-kpi-body">
+          <p class="ar-kpi-label">TOTAL PATIENTS</p>
+          <p class="ar-kpi-value">{{ totalPatients }}</p>
+          <p class="ar-kpi-note">{{ patientRetentionRate }}% retention rate</p>
+        </div>
+        <div class="ar-kpi-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── 3-Panel Row ───────────────────────────────────────────────────── -->
+    <div class="ar-panels-3">
+
+      <!-- Enrollment Status Donut -->
+      <div class="ar-panel">
+        <div class="ar-panel-hdr">
+          <span class="ar-panel-title">Enrollment Status</span>
+          <span class="ar-panel-note">{{ totalEnrollments }} total</span>
+        </div>
+        <div class="ar-donut-row">
+          <!-- Donut Chart -->
+          <div class="ar-donut-wrap">
+            <div class="ar-donut" [style.background]="enrollmentGradient">
+              <div class="ar-donut-hole">
+                <span class="ar-donut-num">{{ totalEnrollments }}</span>
+                <span class="ar-donut-label">ENROLLED</span>
               </div>
             </div>
-          </td>
+          </div>
+          <!-- Legend -->
+          <div class="ar-legend">
+            <div class="ar-legend-item" *ngFor="let s of enrollmentSegments">
+              <span class="ar-legend-dot" [style.background]="s.color"></span>
+              <span class="ar-legend-name">{{ s.label }}</span>
+              <span class="ar-legend-count">{{ s.count }}</span>
+              <span class="ar-legend-pct">{{ s.pct }}%</span>
+            </div>
+            <div class="ar-legend-item ar-legend-empty" *ngIf="enrollmentSegments.length === 0">
+              <span class="ar-legend-name">No enrollments yet</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          <!-- Dropout Rate -->
-          <td class="col-rate">
-            <div class="rate-cell">
-              <div class="rate-header">
-                <span class="rate-value"
-                  [class.rate-great]="r.dropoutRate <= 5"
-                  [class.rate-warn]="r.dropoutRate > 5 && r.dropoutRate <= 15"
-                  [class.rate-poor]="r.dropoutRate > 15">
-                  {{ r.dropoutRate | number:'1.1-1' }}%
-                </span>
-                <span class="rate-chip"
-                  [class.rate-great]="r.dropoutRate <= 5"
-                  [class.rate-warn]="r.dropoutRate > 5 && r.dropoutRate <= 15"
-                  [class.rate-poor]="r.dropoutRate > 15">
-                  {{ r.dropoutRate <= 5 ? 'Low' : r.dropoutRate <= 15 ? 'Mid' : 'High' }}
-                </span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-fill dropout-fill"
-                  [style.width]="cap(r.dropoutRate * 4) + '%'"></div>
+      <!-- Visit Status Donut -->
+      <div class="ar-panel">
+        <div class="ar-panel-hdr">
+          <span class="ar-panel-title">Visit Status</span>
+          <span class="ar-panel-note">{{ totalVisits }} total</span>
+        </div>
+        <div class="ar-donut-row">
+          <div class="ar-donut-wrap">
+            <div class="ar-donut" [style.background]="visitGradient">
+              <div class="ar-donut-hole">
+                <span class="ar-donut-num">{{ totalVisits }}</span>
+                <span class="ar-donut-label">VISITS</span>
               </div>
             </div>
-          </td>
+          </div>
+          <div class="ar-legend">
+            <div class="ar-legend-item" *ngFor="let s of visitSegments">
+              <span class="ar-legend-dot" [style.background]="s.color"></span>
+              <span class="ar-legend-name">{{ s.label }}</span>
+              <span class="ar-legend-count">{{ s.count }}</span>
+              <span class="ar-legend-pct">{{ s.pct }}%</span>
+            </div>
+            <div class="ar-legend-item ar-legend-empty" *ngIf="visitSegments.length === 0">
+              <span class="ar-legend-name">No visits yet</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          <!-- AE Count -->
-          <td class="col-ae">
-            <span class="ae-pill"
-              [class.ae-zero]="r.aeCount === 0"
-              [class.ae-low]="r.aeCount > 0 && r.aeCount <= 3"
-              [class.ae-high]="r.aeCount > 3">
-              {{ r.aeCount }}
+      <!-- Trial Health Gauges -->
+      <div class="ar-panel">
+        <div class="ar-panel-hdr">
+          <span class="ar-panel-title">Trial Health</span>
+          <span class="ar-panel-note">key rates</span>
+        </div>
+        <div class="ar-gauges-row">
+          <!-- Visit Compliance Gauge -->
+          <div class="ar-gauge-wrap">
+            <svg viewBox="0 0 80 80" class="ar-gauge-svg">
+              <circle cx="40" cy="40" r="36" class="ar-gauge-track"/>
+              <circle cx="40" cy="40" r="36" class="ar-gauge-fill"
+                [attr.stroke]="gaugeColor(visitComplianceRate)"
+                [attr.stroke-dasharray]="gaugeDash(visitComplianceRate)"
+                [attr.stroke-dashoffset]="gaugeOffset"/>
+            </svg>
+            <div class="ar-gauge-center">
+              <span class="ar-gauge-pct" [style.color]="gaugeColor(visitComplianceRate)">{{ visitComplianceRate }}%</span>
+              <span class="ar-gauge-lbl">COMPLIANCE</span>
+            </div>
+            <p class="ar-gauge-title">Visit Compliance</p>
+          </div>
+          <!-- Patient Retention Gauge -->
+          <div class="ar-gauge-wrap">
+            <svg viewBox="0 0 80 80" class="ar-gauge-svg">
+              <circle cx="40" cy="40" r="36" class="ar-gauge-track"/>
+              <circle cx="40" cy="40" r="36" class="ar-gauge-fill"
+                [attr.stroke]="gaugeColor(patientRetentionRate)"
+                [attr.stroke-dasharray]="gaugeDash(patientRetentionRate)"
+                [attr.stroke-dashoffset]="gaugeOffset"/>
+            </svg>
+            <div class="ar-gauge-center">
+              <span class="ar-gauge-pct" [style.color]="gaugeColor(patientRetentionRate)">{{ patientRetentionRate }}%</span>
+              <span class="ar-gauge-lbl">RETENTION</span>
+            </div>
+            <p class="ar-gauge-title">Patient Retention</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── 2-Panel Row ───────────────────────────────────────────────────── -->
+    <div class="ar-panels-2">
+
+      <!-- Enrollment Funnel -->
+      <div class="ar-panel">
+        <div class="ar-panel-hdr">
+          <span class="ar-panel-title">Enrollment Funnel</span>
+          <span class="ar-panel-note">progression by status</span>
+        </div>
+        <div class="ar-funnel">
+          <div class="ar-funnel-item" *ngFor="let f of funnelItems">
+            <span class="ar-funnel-label">{{ f.label }}</span>
+            <div class="ar-funnel-track">
+              <div class="ar-funnel-bar"
+                   [style.width.%]="f.width"
+                   [style.background]="f.color"></div>
+            </div>
+            <div class="ar-funnel-nums">
+              <span class="ar-funnel-count">{{ f.count }}</span>
+              <span class="ar-funnel-pct">{{ f.pct }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Safety Overview -->
+      <div class="ar-panel">
+        <div class="ar-panel-hdr">
+          <span class="ar-panel-title">Safety Overview</span>
+          <span class="ar-panel-note">AEs &amp; deviations</span>
+        </div>
+
+        <!-- Adverse Events -->
+        <div class="ar-safety-group">
+          <div class="ar-safety-header">
+            <div class="ar-safety-title-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span class="ar-safety-name">Adverse Events</span>
+            </div>
+            <span class="ar-safety-badge ar-badge-amber">{{ aeTotal }}</span>
+          </div>
+          <div class="ar-safety-bars">
+            <div class="ar-sbar-row" *ngFor="let sev of ['Mild','Moderate','Severe','LifeThreatening','Fatal']">
+              <span class="ar-sbar-label">{{ aeSeverityLabel[sev] }}</span>
+              <div class="ar-sbar-track">
+                <div class="ar-sbar-fill"
+                     [style.width.%]="safetyWidth(aeBySeverity[sev], aeTotal || 1)"
+                     [ngClass]="'ar-sbar-' + sev.toLowerCase()"></div>
+              </div>
+              <span class="ar-sbar-count">{{ aeBySeverity[sev] || 0 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ar-safety-divider"></div>
+
+        <!-- Protocol Deviations -->
+        <div class="ar-safety-group">
+          <div class="ar-safety-header">
+            <div class="ar-safety-title-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span class="ar-safety-name">Protocol Deviations</span>
+            </div>
+            <span class="ar-safety-badge ar-badge-amber">{{ devTotal }}</span>
+          </div>
+          <div class="ar-safety-bars">
+            <div class="ar-sbar-row" *ngFor="let st of ['Reported','UnderReview','Resolved','Closed']">
+              <span class="ar-sbar-label">{{ devStatusLabel[st] }}</span>
+              <div class="ar-sbar-track">
+                <div class="ar-sbar-fill"
+                     [style.width.%]="safetyWidth(devByStatus[st], devTotal || 1)"
+                     [ngClass]="st === 'Reported' ? 'ar-sbar-reported' : st === 'UnderReview' ? 'ar-sbar-underreview' : st === 'Resolved' ? 'ar-sbar-resolved' : 'ar-sbar-closed'"></div>
+              </div>
+              <span class="ar-sbar-count">{{ devByStatus[st] || 0 }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         GENERATE KPI REPORT  (hidden for Regulatory Officer — they review, not generate)
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div class="ar-section-header" style="margin-top:32px">
+      <span class="ar-section-title">Generate KPI Report</span>
+      <span class="ar-section-note">Saves a snapshot of current live data</span>
+    </div>
+
+    <div class="gen-card" *ngIf="isDataManager">
+      <div class="gen-form">
+        <div class="gen-field">
+          <label class="gen-label">Report Scope / Name <span class="gen-required">*</span></label>
+          <input class="gen-input" [(ngModel)]="reportScope"
+            placeholder="e.g. Q2 2026 Enrollment Summary, May AE Review…"
+            maxlength="200">
+        </div>
+        <div class="gen-dates">
+          <div class="gen-field">
+            <label class="gen-label">Start Date <span style="font-weight:400;color:var(--muted,#9ca3af)">(optional)</span></label>
+            <input class="gen-input" type="date" [(ngModel)]="reportStartDate">
+          </div>
+          <div class="gen-field">
+            <label class="gen-label">End Date <span style="font-weight:400;color:var(--muted,#9ca3af)">(optional)</span></label>
+            <input class="gen-input" type="date" [(ngModel)]="reportEndDate"
+              [min]="reportStartDate">
+          </div>
+        </div>
+        <p class="gen-date-hint" *ngIf="!reportStartDate && !reportEndDate">
+          No date range selected — all available data will be included.
+        </p>
+        <p class="gen-date-hint gen-date-hint--set" *ngIf="reportStartDate || reportEndDate">
+          Data filtered from {{ reportStartDate || '—' }} to {{ reportEndDate || 'today' }}.
+        </p>
+      </div>
+      <div class="gen-actions">
+        <button class="btn-generate" (click)="generateReport()" [disabled]="generating || !reportScope.trim()">
+          {{ generating ? 'Saving…' : '⬇ Generate & Save Report' }}
+        </button>
+      </div>
+      <p class="gen-success" *ngIf="generateSuccess">✓ {{ generateSuccess }}</p>
+      <p class="gen-error"   *ngIf="generateError">{{ generateError }}</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         SAVED REPORTS
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div id="saved-reports"></div>
+    <div class="ar-section-header" style="margin-top:32px">
+      <span class="ar-section-title">Saved Reports</span>
+      <span class="ar-section-note">{{ savedReports.length }} report{{ savedReports.length !== 1 ? 's' : '' }} on record</span>
+    </div>
+
+    <!-- Search + pagination controls -->
+    <div class="saved-toolbar" *ngIf="!reportsLoading && savedReports.length > 0">
+      <input class="saved-search" [(ngModel)]="reportSearch" (ngModelChange)="currentPage = 1" placeholder="Search by name…">
+      <span class="saved-count">{{ pagedReports.length }} of {{ filteredReports.length }}</span>
+    </div>
+
+    <div class="saved-loading" *ngIf="reportsLoading">
+      <div class="spinner"></div><span>Loading reports…</span>
+    </div>
+
+    <div class="saved-empty" *ngIf="!reportsLoading && savedReports.length === 0">
+      No reports generated yet. Use the form above to create one.
+    </div>
+
+    <div class="saved-empty" *ngIf="!reportsLoading && savedReports.length > 0 && filteredReports.length === 0">
+      No reports match "{{ reportSearch }}".
+    </div>
+
+    <!-- Report cards -->
+    <div class="report-cards" *ngIf="!reportsLoading && pagedReports.length > 0">
+      <div class="report-card" *ngFor="let r of pagedReports">
+
+        <!-- Card header -->
+        <div class="rc-header">
+          <div class="rc-header-left">
+            <p class="rc-scope">{{ r.scope }}</p>
+            <p class="rc-date">Generated {{ r.generatedDate | date:'d MMM yyyy' }}</p>
+            <p class="rc-date rc-date-range" *ngIf="r.startDate || r.endDate">
+              {{ r.startDate ? (r.startDate | date:'d MMM yyyy') : '—' }} →
+              {{ r.endDate   ? (r.endDate   | date:'d MMM yyyy') : 'today' }}
+            </p>
+            <p class="rc-date" *ngIf="!r.startDate && !r.endDate" style="color:#9ca3af;font-style:italic">All data</p>
+          </div>
+          <div class="rc-header-right">
+            <span class="status-badge" [class.status-reviewed]="r.status === 'Reviewed'">
+              {{ r.status }}
             </span>
-          </td>
+            <span class="reviewed-date" *ngIf="r.reviewedAt">reviewed {{ r.reviewedAt | date:'d MMM' }}</span>
+          </div>
+        </div>
 
-          <td class="col-date cell-muted">{{ r.generatedDate | date:'MMM d, y' }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+        <!-- KPI grid -->
+        <div class="rc-kpis">
+          <div class="rc-kpi"><span class="rc-kpi-val">{{ r.enrollmentRate | number:'1.1-1' }}%</span><span class="rc-kpi-lbl">Enrollment</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-val">{{ r.dropoutRate | number:'1.1-1' }}%</span><span class="rc-kpi-lbl">Dropout</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-val">{{ r.visitComplianceRate | number:'1.1-1' }}%</span><span class="rc-kpi-lbl">Visit Compliance</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-val">{{ r.patientRetentionRate | number:'1.1-1' }}%</span><span class="rc-kpi-lbl">Retention</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-val">{{ r.totalPatients }}</span><span class="rc-kpi-lbl">Patients</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-val">{{ r.activeEnrollments }}/{{ r.totalEnrollments }}</span><span class="rc-kpi-lbl">Active/Total Enr.</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-val">{{ r.totalVisits }}</span><span class="rc-kpi-lbl">Visits</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-val" [class.rc-val-warn]="r.aeCount > 0">{{ r.aeCount }}</span><span class="rc-kpi-lbl">AEs ({{ r.mildAEs }}M/{{ r.moderateAEs }}Mo/{{ r.severeAEs }}S)</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-val">{{ r.devCount }}</span><span class="rc-kpi-lbl">Deviations ({{ r.reportedDevs }} open)</span></div>
+        </div>
 
-  <!-- ── Empty State ──────────────────────────────────────────────────────── -->
-  <div class="empty-state" *ngIf="!loading && filteredReports.length === 0">
-    <div class="empty-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+        <!-- Review action -->
+        <div class="rc-footer" *ngIf="isRegulatoryOfficer && r.status !== 'Reviewed'">
+          <button class="btn-mark-reviewed" (click)="reviewReport(r)">✓ Mark as Reviewed</button>
+        </div>
+
+      </div>
     </div>
-    <h3 class="empty-title">No reports found</h3>
-    <p class="empty-sub">No KPI reports match the selected scope filter.</p>
-  </div>
 
+    <!-- Pagination -->
+    <div class="saved-pagination" *ngIf="!reportsLoading && filteredReports.length > pageSize">
+      <button class="page-btn" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">← Prev</button>
+      <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+      <button class="page-btn" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1">Next →</button>
+    </div>
+
+  </ng-container>
 </div>

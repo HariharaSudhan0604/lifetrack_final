@@ -18,15 +18,32 @@
     <p>Loading enrollments…</p>
   </div>
 
+  <!-- Filter Bar -->
+  <div class="filter-bar" *ngIf="!loading">
+    <div class="search-bar">
+      <span class="search-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </span>
+      <input type="text" class="search-input" placeholder="Search patient, protocol or site…"
+        [value]="searchTerm" (input)="onSearch($any($event.target).value)" />
+      <button class="search-clear" *ngIf="searchTerm" (click)="onSearch('')" title="Clear">&#10005;</button>
+    </div>
+    <select class="filter-select" [value]="filterStatus" (change)="onStatusChange($any($event.target).value)">
+      <option value="">All Statuses</option>
+      <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+    </select>
+    <button class="btn-clear-filters" *ngIf="hasActiveFilters" (click)="clearFilters()">&#10005; Clear all</button>
+  </div>
+
   <!-- Table -->
   <div class="table-card" *ngIf="!loading">
-    <div *ngIf="enrollments.length === 0" class="empty-state">
+    <div *ngIf="filteredEnrollments.length === 0" class="empty-state">
       <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-      <p class="empty-title">No patients enrolled yet</p>
-      <p class="empty-sub">Click "Enroll Patient" to add a patient to one of your protocols.</p>
+      <p class="empty-title">{{ hasActiveFilters ? 'No enrollments match your filters.' : 'No patients enrolled yet' }}</p>
+      <p class="empty-sub" *ngIf="!hasActiveFilters">Click "Enroll Patient" to add a patient to one of your protocols.</p>
     </div>
 
-    <table class="data-table" *ngIf="enrollments.length > 0">
+    <table class="data-table" *ngIf="filteredEnrollments.length > 0">
       <thead>
         <tr>
           <th>#</th>
@@ -34,29 +51,26 @@
           <th>Protocol</th>
           <th>Site</th>
           <th>Enrollment Date</th>
-          <th>Consent Date</th>
           <th>Status</th>
           <th>Action</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let e of enrollments; let i = index">
+        <tr *ngFor="let e of filteredEnrollments; let i = index">
           <td class="col-idx">{{ i + 1 }}</td>
-          <td>
-            <div class="patient-cell">
-              <div class="patient-avatar">{{ patientName(e.patientID).charAt(0) }}</div>
-              <span>{{ patientName(e.patientID) }}</span>
-            </div>
-          </td>
+          <td>{{ patientName(e.patientID) }}</td>
           <td>{{ protocolName(e.siteProtocolID) }}</td>
           <td>{{ siteName(e.siteProtocolID) }}</td>
           <td>{{ e.enrollmentDate | date:'MMM d, y' }}</td>
-          <td>{{ e.consentDate ? (e.consentDate | date:'MMM d, y') : '—' }}</td>
           <td><span class="badge" [ngClass]="statusClass(e.status)">{{ e.status }}</span></td>
           <td><button class="btn-edit" (click)="openEditModal(e)"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button></td>
         </tr>
       </tbody>
     </table>
+
+    <div class="table-footer" *ngIf="filteredEnrollments.length > 0">
+      <span class="footer-info">Showing {{ filteredEnrollments.length }} of {{ enrollments.length }}</span>
+    </div>
   </div>
 
 </main>
@@ -76,15 +90,11 @@
       </div>
       <div class="form-group">
         <label>Enrollment Date <span class="req">*</span></label>
-        <input type="date" formControlName="enrollmentDate" [max]="today"
-          [class.input-err]="ef['enrollmentDate'].invalid && ef['enrollmentDate'].touched" />
-        <span class="err-msg" *ngIf="ef['enrollmentDate'].invalid && ef['enrollmentDate'].touched">Enrollment date is required.</span>
-      </div>
-      <div class="form-group">
-        <label>Consent Date <span class="opt">(optional)</span></label>
-        <input type="date" formControlName="consentDate" [max]="today"
-          [class.input-err]="!!consentErr(editForm)" />
-        <span class="err-msg" *ngIf="consentErr(editForm)">{{ consentErr(editForm) }}</span>
+        <input type="date" formControlName="enrollmentDate"
+          [min]="minEditEnrollmentDate"
+          [class.input-err]="(ef['enrollmentDate'].invalid && ef['enrollmentDate'].touched) || !!initiationDateErr(editForm)" />
+        <span class="err-msg" *ngIf="ef['enrollmentDate'].invalid && ef['enrollmentDate'].touched && !initiationDateErr(editForm)">Enrollment date is required.</span>
+        <span class="err-msg" *ngIf="initiationDateErr(editForm)">{{ initiationDateErr(editForm) }}</span>
       </div>
       <div class="form-group">
         <label>Status <span class="req">*</span></label>
@@ -134,27 +144,29 @@
       <!-- Site Protocol -->
       <div class="form-group">
         <label>Protocol &amp; Site <span class="req">*</span></label>
-        <select formControlName="siteProtocolID" [class.input-err]="f['siteProtocolID'].invalid && f['siteProtocolID'].touched">
+        <select formControlName="siteProtocolID"
+          [class.input-err]="f['siteProtocolID'].invalid && f['siteProtocolID'].touched"
+          [disabled]="allProtocolsEnrolled">
           <option value="">— Select protocol &#64; site —</option>
-          <option *ngFor="let sp of siteProtocolOptions" [value]="sp.siteProtocolID">{{ spLabel(sp) }}</option>
+          <option *ngFor="let sp of availableSiteProtocols" [value]="sp.siteProtocolID">{{ spLabel(sp) }}</option>
         </select>
-        <span class="err-msg" *ngIf="f['siteProtocolID'].invalid && f['siteProtocolID'].touched">Protocol &amp; Site is required</span>
+        <span class="err-msg" *ngIf="f['siteProtocolID'].invalid && f['siteProtocolID'].touched && !allProtocolsEnrolled">Protocol &amp; Site is required</span>
+        <span class="info-msg" *ngIf="f['patientID'].value && !allProtocolsEnrolled && availableSiteProtocols.length < siteProtocolOptions.length">
+          Some protocols are hidden because this patient is already enrolled in them.
+        </span>
+        <span class="warn-msg" *ngIf="allProtocolsEnrolled">
+          This patient is already enrolled in all available protocols.
+        </span>
       </div>
 
       <!-- Enrollment Date -->
       <div class="form-group">
         <label>Enrollment Date <span class="req">*</span></label>
-        <input type="date" formControlName="enrollmentDate" [max]="today"
-          [class.input-err]="f['enrollmentDate'].invalid && f['enrollmentDate'].touched" />
-        <span class="err-msg" *ngIf="f['enrollmentDate'].invalid && f['enrollmentDate'].touched">Enrollment date is required.</span>
-      </div>
-
-      <!-- Consent Date -->
-      <div class="form-group">
-        <label>Consent Date <span class="opt">(optional)</span></label>
-        <input type="date" formControlName="consentDate" [max]="today"
-          [class.input-err]="!!consentErr(form)" />
-        <span class="err-msg" *ngIf="consentErr(form)">{{ consentErr(form) }}</span>
+        <input type="date" formControlName="enrollmentDate"
+          [min]="minEnrollmentDate"
+          [class.input-err]="(f['enrollmentDate'].invalid && f['enrollmentDate'].touched) || !!initiationDateErr(form)" />
+        <span class="err-msg" *ngIf="f['enrollmentDate'].invalid && f['enrollmentDate'].touched && !initiationDateErr(form)">Enrollment date is required.</span>
+        <span class="err-msg" *ngIf="initiationDateErr(form)">{{ initiationDateErr(form) }}</span>
       </div>
 
       <!-- Status -->

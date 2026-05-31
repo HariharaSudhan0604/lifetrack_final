@@ -44,9 +44,10 @@ public class NotificationsController : ControllerBase
         return Ok(await _svc.ListAllAsync(category, status, page, pageSize));
     }
 
-    /// <summary>Create (send) a notification. Admin / ClinicalTrialManager only.</summary>
+    /// <summary>Create (send) a notification.</summary>
     [HttpPost]
-    [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager)]
+    [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.Investigator,
+                   RolesEnum.Patient, RolesEnum.RegulatoryOfficer, RolesEnum.DataManager)]
     public async Task<ActionResult<NotificationResponse>> Create([FromBody] CreateNotificationRequest req)
     {
         var created = await _svc.CreateAsync(req);

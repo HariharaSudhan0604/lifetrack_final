@@ -8,18 +8,13 @@
       </div>
       <div>
         <p class="dash-title">Admin console</p>
-        <p class="dash-sub">{{ firstName }} &nbsp;·&nbsp; System administrator &nbsp;·&nbsp; LifeTrack v4.2</p>
+        <p class="dash-sub">{{ firstName }} &nbsp;·&nbsp; System administrator &nbsp;·&nbsp; {{ today | date:'MMM d, y' }}</p>
       </div>
     </div>
     <div class="dash-header-right">
-      <button class="hdr-btn" (click)="manageProtocols()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New protocol
-      </button>
-      <button class="hdr-btn" (click)="manageUsers()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-        Add user
-      </button>
+      <button class="hdr-btn" (click)="manageProtocols()">View protocols</button>
+      <button class="hdr-btn" (click)="manageSites()">View sites</button>
+      <button class="hdr-btn" (click)="manageUsers()">View users</button>
     </div>
   </div>
 
@@ -32,18 +27,18 @@
     </div>
     <div class="kpi-card">
       <p class="kpi-label">Protocols</p>
-      <p class="kpi-value">{{ loading ? '—' : activeProtocols }}<span class="kpi-suffix"> active</span></p>
-      <p class="kpi-note" *ngIf="!loading">{{ draftProtocols }} in draft</p>
+      <p class="kpi-value">{{ loading ? '—' : protocols }}</p>
+      <p class="kpi-note kpi-good" *ngIf="!loading">{{ activeProtocols }} active</p>
     </div>
     <div class="kpi-card">
       <p class="kpi-label">Sites</p>
       <p class="kpi-value">{{ loading ? '—' : sites }}</p>
-      <p class="kpi-note" *ngIf="!loading">{{ patients }} patients</p>
+      <p class="kpi-note kpi-good" *ngIf="!loading">{{ activeSites }} active</p>
     </div>
     <div class="kpi-card">
-      <p class="kpi-label">Open AEs</p>
-      <p class="kpi-value" [class.kpi-warn]="recentAEs.length > 0">{{ loading ? '—' : recentAEs.length }}</p>
-      <p class="kpi-note" *ngIf="!loading">Across {{ activeProtocols }} active trials</p>
+      <p class="kpi-label">Audit logs</p>
+      <p class="kpi-value">{{ loading ? '—' : recentAuditLogs.length }}</p>
+      <p class="kpi-note" *ngIf="!loading">Recent activity</p>
     </div>
   </div>
 
@@ -54,10 +49,7 @@
     <div class="dash-panel">
       <div class="panel-hdr">
         <span class="panel-title">Users &amp; roles</span>
-        <div class="users-search">
-          <input type="text" placeholder="Search users…" [(ngModel)]="userSearch" name="userSearch" />
-          <button class="hdr-btn-sm" (click)="manageUsers()">Manage</button>
-        </div>
+        <button class="hdr-btn-sm" (click)="manageUsers()">Manage</button>
       </div>
 
       <div *ngIf="loading" class="loading-row">
@@ -91,10 +83,10 @@
       </table>
     </div>
 
-    <!-- Right: Recent Adverse Events (live data) -->
+    <!-- Right: Recent Audit Logs -->
     <div class="dash-panel">
       <div class="panel-hdr">
-        <span class="panel-title">Recent adverse events</span>
+        <span class="panel-title">Recent audit logs</span>
         <button class="hdr-btn-sm" (click)="manageAuditLogs()">Audit logs</button>
       </div>
 
@@ -102,97 +94,24 @@
         <div class="spinner-sm"></div>
         <span>Loading…</span>
       </div>
-      <div *ngIf="!loading && recentAEs.length === 0" class="empty-row">
-        No adverse events on record.
+      <div *ngIf="!loading && recentAuditLogs.length === 0" class="empty-row">
+        No audit logs on record.
       </div>
 
-      <div class="integ-list" *ngIf="!loading && recentAEs.length > 0">
-        <div class="integ-item" *ngFor="let ae of recentAEs | slice:0:5" (click)="openAEDetail(ae)" style="cursor:pointer">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="integ-list" *ngIf="!loading && recentAuditLogs.length > 0">
+        <div class="integ-item" *ngFor="let log of recentAuditLogs | slice:0:6">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           <div class="integ-body">
-            <p class="integ-name">{{ ae.description ?? '—' }}</p>
-            <p class="integ-meta">Patient #{{ ae.patientID }} · {{ ae.reportedDate | date:'MMM d, y' }}</p>
+            <p class="integ-name">{{ log.userName ?? ('User #' + log.userID) }}</p>
+            <p class="integ-meta">{{ log.actionTime | date:'MMM d, y · h:mm a' }}</p>
           </div>
-          <span class="status-pill" [ngClass]="severityClass(ae.severity)">{{ ae.severity }}</span>
+          <span class="status-pill" [ngClass]="actionClass(log.action)">{{ log.action }}</span>
         </div>
       </div>
     </div>
 
   </div>
 
-  <!-- ── Protocols & Sites table ────────────────────────────────────────────── -->
-  <div class="dash-panel" style="margin-top:16px">
-    <div class="panel-hdr">
-      <span class="panel-title">Protocols &amp; sites</span>
-      <button class="hdr-btn-sm" (click)="manageSites()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New site
-      </button>
-    </div>
-
-    <div *ngIf="loading" class="loading-row">
-      <div class="spinner-sm"></div>
-      <span>Loading protocols…</span>
-    </div>
-    <div *ngIf="!loading && recentProtocols.length === 0" class="empty-row">No protocols found.</div>
-
-    <table class="adm-table" *ngIf="!loading && recentProtocols.length > 0">
-      <thead>
-        <tr>
-          <th style="width:34%">Protocol</th>
-          <th style="width:14%">Phase</th>
-          <th style="width:24%">Start</th>
-          <th style="width:14%">End</th>
-          <th style="width:14%">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let p of recentProtocols | slice:0:6" (click)="manageProtocols()" style="cursor:pointer">
-          <td><p class="user-name">{{ p.title ?? '—' }}</p></td>
-          <td>{{ p.phase ?? '—' }}</td>
-          <td class="muted-cell">{{ p.startDate ? (p.startDate | date:'MMM d, y') : 'Not set' }}</td>
-          <td class="muted-cell">{{ p.endDate ? (p.endDate | date:'MMM y') : '—' }}</td>
-          <td><span class="status-pill" [ngClass]="protocolStatusClass(p.status)">{{ p.status }}</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
 
 </main>
 
-<!-- ── AE Detail Modal (unchanged) ──────────────────────────────────────────── -->
-<div class="ae-modal-overlay" *ngIf="showAEModal" (click)="closeAEModal()">
-  <div class="ae-modal-card" (click)="$event.stopPropagation()">
-    <div class="ae-modal-header">
-      <div class="ae-modal-header-left">
-        <div class="ae-modal-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </div>
-        <div>
-          <h2 class="ae-modal-title">Adverse Event Detail</h2>
-          <p class="ae-modal-sub">AE #{{ selectedAE?.eventID ?? selectedAE?.adverseEventID ?? '—' }}</p>
-        </div>
-      </div>
-      <button class="ae-modal-close" (click)="closeAEModal()">&#10005;</button>
-    </div>
-    <div class="ae-modal-badges">
-      <span class="badge badge-lg" [ngClass]="severityClass(selectedAE?.severity)">{{ selectedAE?.severity }}</span>
-      <span class="badge badge-lg" [ngClass]="statusClass(selectedAE?.status)">{{ selectedAE?.status }}</span>
-    </div>
-    <div class="ae-modal-grid">
-      <div class="ae-field"><span class="ae-field-label">Patient ID</span><span class="ae-field-value">#{{ selectedAE?.patientID ?? '—' }}</span></div>
-      <div class="ae-field"><span class="ae-field-label">Protocol ID</span><span class="ae-field-value">#{{ selectedAE?.protocolID ?? '—' }}</span></div>
-      <div class="ae-field"><span class="ae-field-label">Reported Date</span><span class="ae-field-value">{{ selectedAE?.reportedDate | date:'MMM d, y' }}</span></div>
-      <div class="ae-field"><span class="ae-field-label">Severity</span><span class="ae-field-value">{{ selectedAE?.severity ?? '—' }}</span></div>
-      <div class="ae-field"><span class="ae-field-label">Status</span><span class="ae-field-value">{{ selectedAE?.status ?? '—' }}</span></div>
-      <div class="ae-field"><span class="ae-field-label">Outcome</span><span class="ae-field-value">{{ selectedAE?.outcome ?? '—' }}</span></div>
-    </div>
-    <div class="ae-field ae-field-full">
-      <span class="ae-field-label">Description</span>
-      <p class="ae-field-desc">{{ selectedAE?.description ?? 'No description provided.' }}</p>
-    </div>
-    <div class="ae-modal-footer">
-      <button class="btn-close-modal" (click)="closeAEModal()">Close</button>
-    </div>
-  </div>
-</div>

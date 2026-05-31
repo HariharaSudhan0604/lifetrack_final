@@ -20,13 +20,15 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
   success = '';
   showModal = false;
 
-  siteProtocols: any[] = [];
+  siteProtocols: any[] = [];      // all site-protocols (for lookup maps)
+  modalSiteProtocols: any[] = []; // investigator's own protocols (for the modal dropdown)
   protocols: any[] = [];
   sites: any[] = [];
   deviations: any[] = [];
 
   filteredDeviations: any[] = [];
   siteProtocolIDs: Set<number> = new Set();
+  searchTerm = '';
 
   protocolMap: Record<number, string> = {};
   siteMap: Record<number, string> = {};
@@ -36,21 +38,33 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
     siteProtocolID: '',
     description: '',
     severity: '',
-    status: 'Open'
+    status: 'Reported'
   };
 
   formErrors: Record<string, string> = {};
-  editFormErrors: Record<string, string> = {};
 
-  // ── Edit ───────────────────────────────────────────────────────────────────
-  showEditModal  = false;
-  editingDev: any = null;
-  editSubmitting = false;
-  editError      = '';
-  editSuccess    = '';
-  editForm = { description: '', severity: '', status: '' };
-  editSeverities = ['Minor', 'Moderate', 'Major', 'Critical'];
-  editStatuses   = ['Open', 'Under Review', 'Resolved'];
+  // ── Escalation tracking (persisted in localStorage) ───────────────────────
+  private readonly LS_KEY_DEV = 'escalated_dev_ids';
+  escalatedDevIds = new Set<number>();
+
+  // ── Review modal (CTM + Regulatory Officer) ───────────────────────────────
+  showReviewModal      = false;
+  reviewDev: any       = null;
+  reviewDevStatus      = '';
+  reviewDevSaving      = false;
+  reviewDevSuccess     = '';
+  reviewDevError       = '';
+  showEscalateConfirm  = false;
+
+  /** Human-readable labels for status values — handles both current and legacy DB values. */
+  readonly statusLabel: Record<string, string> = {
+    Reported:        'Reported',
+    Open:            'Reported',       // legacy DB value → normalise display
+    UnderReview:     'Under Review',
+    'Under Review':  'Under Review',   // legacy DB value
+    Resolved:        'Resolved',
+    Closed:          'Closed'
+  };
 
   constructor(
     private http: HttpClient,
@@ -59,50 +73,81 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
     private nav: NavigationService
   ) {}
 
+  get isRegulatoryOfficer(): boolean {
+    return this.authService.currentUser?.role === 'RegulatoryOfficer';
+  }
+
+  get isInvestigator(): boolean {
+    return this.authService.currentUser?.role === 'Investigator';
+  }
+
+  get isCTM(): boolean {
+    return this.authService.currentUser?.role === 'ClinicalTrialManager';
+  }
+
+  get isDataManager(): boolean {
+    return this.authService.currentUser?.role === 'DataManager';
+  }
+
   ngOnInit(): void {
     const uid = this.authService.currentUser?.userID;
     this.loadData(uid);
+
+    try {
+      const stored = JSON.parse(localStorage.getItem(this.LS_KEY_DEV) || '[]');
+      this.escalatedDevIds = new Set<number>(stored);
+    } catch { this.escalatedDevIds = new Set(); }
   }
 
   loadData(uid: number | undefined): void {
     forkJoin({
-      siteProtocols: this.http.get<any>(`${environment.apiUrl}/site-protocols?investigatorId=${uid}&pageSize=50`).pipe(catchError(() => of({ items: [] }))),
-      protocols: this.http.get<any>(`${environment.apiUrl}/protocols?pageSize=200`).pipe(catchError(() => of({ items: [] }))),
-      sites: this.http.get<any>(`${environment.apiUrl}/sites?pageSize=200`).pipe(catchError(() => of({ items: [] }))),
-      deviations: this.http.get<any>(`${environment.apiUrl}/deviations?pageSize=200`).pipe(catchError(() => of({ items: [] })))
+      // All site-protocols for lookup maps (protocol/site names always resolve)
+      allSiteProtocols: this.http.get<any>(`${environment.apiUrl}/site-protocols?pageSize=500`).pipe(catchError(() => of({ items: [] }))),
+      // Investigator's own site-protocols — used for the "Report Deviation" modal dropdown
+      mySiteProtocols:  this.http.get<any>(`${environment.apiUrl}/site-protocols?investigatorId=${uid}&pageSize=100`).pipe(catchError(() => of({ items: [] }))),
+      protocols:        this.http.get<any>(`${environment.apiUrl}/protocols?pageSize=200`).pipe(catchError(() => of({ items: [] }))),
+      sites:            this.http.get<any>(`${environment.apiUrl}/sites?pageSize=200`).pipe(catchError(() => of({ items: [] }))),
+      deviations:       this.http.get<any>(`${environment.apiUrl}/deviations?pageSize=500`).pipe(catchError(() => of({ items: [] })))
     }).subscribe({
-      next: (results) => {
-        this.siteProtocols = results.siteProtocols.items || [];
-        this.protocols = results.protocols.items || [];
-        this.sites = results.sites.items || [];
-        this.deviations = results.deviations.items || [];
+      next: ({ allSiteProtocols, mySiteProtocols, protocols, sites, deviations }) => {
+        this.protocols  = protocols.items  || [];
+        this.sites      = sites.items      || [];
+        this.deviations = deviations.items || [];
 
+        // Build maps from ALL site-protocols so names resolve for every deviation row
+        this.siteProtocols = allSiteProtocols.items || [];
         this.buildMaps();
-        this.filterData();
+
+        // Modal dropdown: investigator's own protocols; fall back to all if none assigned
+        const myItems = mySiteProtocols.items ?? [];
+        this.modalSiteProtocols = myItems.length > 0 ? myItems : (allSiteProtocols.items ?? []);
+        this.modalSiteProtocols.forEach((sp: any) => this.siteProtocolIDs.add(+sp.siteProtocolID));
+
+        // All roles see all deviations — no investigator filter
+        this.filteredDeviations = this.deviations;
         this.loading = false;
       },
-      error: () => {
-        this.loading = false;
-      }
+      error: () => { this.loading = false; }
     });
   }
 
   buildMaps(): void {
-    this.protocols.forEach(p => {
-      this.protocolMap[+p.protocolID] = p.title;
-    });
-    this.sites.forEach(s => {
-      this.siteMap[+s.siteID] = s.name || s.siteName;
-    });
-    this.siteProtocols.forEach(sp => {
-      this.siteProtocolMap[+sp.siteProtocolID] = sp;
-      this.siteProtocolIDs.add(+sp.siteProtocolID);
+    this.protocols.forEach(p     => { this.protocolMap[+p.protocolID]           = p.title; });
+    this.sites.forEach(s         => { this.siteMap[+s.siteID]                   = s.name || s.siteName; });
+    this.siteProtocols.forEach(sp => { this.siteProtocolMap[+sp.siteProtocolID] = sp; });
+  }
+
+  get displayedDeviations(): any[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) return this.filteredDeviations;
+    return this.filteredDeviations.filter(d => {
+      const protocol = this.protocolName(d).toLowerCase();
+      const site     = this.siteName(d).toLowerCase();
+      return protocol.includes(term) || site.includes(term);
     });
   }
 
-  filterData(): void {
-    this.filteredDeviations = this.deviations.filter(d => this.siteProtocolIDs.has(+d.siteProtocolID));
-  }
+  clearSearch(): void { this.searchTerm = ''; }
 
   spLabel(sp: any): string {
     const protocol = this.protocolMap[+sp.protocolID] || `Protocol #${sp.protocolID}`;
@@ -111,7 +156,7 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
   }
 
   openModal(): void {
-    this.form = { siteProtocolID: '', description: '', severity: '', status: 'Open' };
+    this.form = { siteProtocolID: '', description: '', severity: '', status: 'Reported' };
     this.error = '';
     this.success = '';
     this.showModal = true;
@@ -127,7 +172,6 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
     this.formErrors = {};
     if (!this.form.siteProtocolID) this.formErrors['siteProtocolID'] = 'Site protocol is required.';
     if (!this.form.severity)       this.formErrors['severity']       = 'Severity is required.';
-    if (!this.form.status)         this.formErrors['status']         = 'Status is required.';
     if (!this.form.description || !this.form.description.trim()) {
       this.formErrors['description'] = 'Description is required.';
     } else if (this.form.description.trim().length < 10) {
@@ -155,13 +199,23 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
       status: this.form.status
     };
 
-    this.http.post<any>(`${environment.apiUrl}/deviations`, payload).subscribe({
-      next: (created) => {
-        this.deviations.push(created);
-        this.filteredDeviations = this.deviations.filter(d => this.siteProtocolIDs.has(d.siteProtocolID));
+    this.http.post<{ deviationID: number }>(`${environment.apiUrl}/deviations`, payload).subscribe({
+      next: (res) => {
+        this.deviations.push({
+          deviationID:    res.deviationID,
+          siteProtocolID: +payload.siteProtocolID,
+          description:    payload.description,
+          severity:       payload.severity,
+          status:         payload.status
+        });
+        this.filteredDeviations = [...this.deviations];
         this.success = 'Deviation reported successfully.';
         this.submitting = false;
         setTimeout(() => this.closeModal(), 1500);
+        const devMsg = `New protocol deviation reported. Severity: ${payload.severity}. ${this.protocolName({ siteProtocolID: +payload.siteProtocolID })} @ ${this.siteName({ siteProtocolID: +payload.siteProtocolID })}.`;
+        this.notifyRoles('RegulatoryOfficer', devMsg, 'DeviationAlert');
+        this.notifyRoles('ClinicalTrialManager', devMsg, 'DeviationAlert');
+        this.notifyRoles('DataManager', devMsg, 'DeviationAlert');
       },
       error: () => {
         this.error = 'Failed to submit deviation. Please try again.';
@@ -172,77 +226,95 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
 
   severityClass(s: string): string {
     if (s === 'Critical' || s === 'Major') return 'badge-red';
-    if (s === 'Moderate') return 'badge-amber';
     if (s === 'Minor') return 'badge-green';
+    // Handle legacy values that may exist in the database
+    if (s === 'Moderate') return 'badge-amber';
     return 'badge-default';
   }
 
   statusClass(s: string): string {
-    if (s === 'Open') return 'badge-red';
-    if (s === 'Under Review') return 'badge-amber';
-    if (s === 'Resolved') return 'badge-green';
-    return 'badge-default';
+    // Handle both current API values and legacy values stored in older records
+    if (s === 'Reported'    || s === 'Open')          return 'badge-red';
+    if (s === 'UnderReview' || s === 'Under Review')  return 'badge-amber';
+    if (s === 'Resolved')                              return 'badge-green';
+    if (s === 'Closed')                                return 'badge-slate';
+    return 'badge-slate';
   }
 
-  openEditModal(dev: any): void {
-    this.editingDev = dev;
-    this.editForm = {
-      description: dev.description ?? '',
-      severity:    dev.severity    ?? '',
-      status:      dev.status      ?? 'Open'
-    };
-    this.editError   = '';
-    this.editSuccess = '';
-    this.showEditModal = true;
+  /** Human-readable label — normalises both current and legacy status values. */
+
+  // ── Review modal (CTM + Regulatory Officer) ───────────────────────────────
+
+  openReviewModal(dev: any): void {
+    this.reviewDev        = dev;
+    this.reviewDevStatus  = dev.status ?? 'Reported';
+    this.reviewDevSuccess = '';
+    this.reviewDevError   = '';
+    this.showReviewModal  = true;
   }
 
-  closeEditModal(): void {
-    this.showEditModal = false;
-    this.editingDev = null;
+  closeReviewModal(): void {
+    this.showReviewModal     = false;
+    this.showEscalateConfirm = false;
+    this.reviewDev = null;
   }
 
-  validateEditForm(): boolean {
-    this.editFormErrors = {};
-    if (!this.editForm.severity) this.editFormErrors['severity'] = 'Severity is required.';
-    if (!this.editForm.status)   this.editFormErrors['status']   = 'Status is required.';
-    if (!this.editForm.description || !this.editForm.description.trim()) {
-      this.editFormErrors['description'] = 'Description is required.';
-    } else if (this.editForm.description.trim().length < 10) {
-      this.editFormErrors['description'] = 'Description must be at least 10 characters.';
-    } else if (this.editForm.description.trim().length > 1000) {
-      this.editFormErrors['description'] = 'Description cannot exceed 1000 characters.';
-    }
-    return Object.keys(this.editFormErrors).length === 0;
-  }
-
-  submitEdit(): void {
-    if (!this.validateEditForm()) {
-      this.editError = 'Please fix the errors below.';
-      return;
-    }
-    this.editSubmitting = true;
-    this.editError = '';
+  saveReviewDevStatus(): void {
+    if (!this.reviewDev) return;
+    this.reviewDevSaving  = true;
+    this.reviewDevError   = '';
+    this.reviewDevSuccess = '';
 
     const payload = {
-      siteProtocolID: this.editingDev.siteProtocolID,
-      description:    this.editForm.description,
-      severity:       this.editForm.severity,
-      status:         this.editForm.status
+      siteProtocolID: this.reviewDev.siteProtocolID,
+      description:    this.reviewDev.description,
+      severity:       this.reviewDev.severity,
+      status:         this.reviewDevStatus
     };
 
-    this.http.put<any>(`${environment.apiUrl}/deviations/${this.editingDev.deviationID}`, payload).subscribe({
+    this.http.put<void>(`${environment.apiUrl}/deviations/${this.reviewDev.deviationID}`, payload).subscribe({
       next: () => {
-        Object.assign(this.editingDev, payload);
-        this.editSuccess    = 'Deviation updated successfully.';
-        this.editSubmitting = false;
-        setTimeout(() => this.closeEditModal(), 1200);
+        Object.assign(this.reviewDev, { status: this.reviewDevStatus });
+        const original = this.deviations.find((d: any) => d.deviationID === this.reviewDev.deviationID);
+        if (original) original.status = this.reviewDevStatus;
+        this.reviewDevSaving  = false;
+        this.reviewDevSuccess = 'Status updated successfully.';
       },
       error: () => {
-        this.editError      = 'Failed to update deviation. Please try again.';
-        this.editSubmitting = false;
+        this.reviewDevSaving = false;
+        this.reviewDevError  = 'Failed to update status. Please try again.';
       }
     });
   }
+
+  escalateFromReview(): void {
+    if (!this.reviewDev) return;
+    this.showEscalateConfirm = false;
+    this.escalateDeviation(this.reviewDev);
+  }
+
+  // ── Escalate to Regulatory Officer (CTM only) ─────────────────────────────
+
+  escalateDeviation(dev: any): void {
+
+    this.escalatedDevIds.add(+dev.deviationID);
+    localStorage.setItem(this.LS_KEY_DEV, JSON.stringify([...this.escalatedDevIds]));
+
+    this.http.get<any>(`${environment.apiUrl}/users?pageSize=100`).subscribe({
+      next: (result) => {
+        const regOfficers = (result.items || []).filter((u: any) => u.role === 'RegulatoryOfficer');
+        regOfficers.forEach((user: any) => {
+          this.http.post(`${environment.apiUrl}/notifications`, {
+            userID:   user.userID,
+            message:  `⚠ Protocol deviation escalated by CTM for regulatory review. Severity: ${dev.severity}. Protocol: ${this.protocolName(dev)}. Site: ${this.siteName(dev)}.`,
+            category: 'DeviationAlert'
+          }).subscribe();
+        });
+      },
+      error: () => {}
+    });
+  }
+
 
   protocolName(dev: any): string {
     const sp = this.siteProtocolMap[+dev.siteProtocolID];
@@ -254,7 +326,22 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
     return sp ? (this.siteMap[+sp.siteID] ?? `Site #${sp.siteID}`) : '—';
   }
 
+  private notifyRoles(role: string, message: string, category: string): void {
+    this.http.get<any>(`${environment.apiUrl}/users?pageSize=100`).subscribe({
+      next: (result) => {
+        (result.items || []).filter((u: any) => u.role === role).forEach((user: any) => {
+          this.http.post(`${environment.apiUrl}/notifications`, { userID: user.userID, message, category }).subscribe();
+        });
+      },
+      error: () => {}
+    });
+  }
+
   goBack(): void {
-    this.nav.back('/dashboard/investigator');
+    const role = this.authService.currentUser?.role;
+    if (role === 'DataManager')            this.nav.back('/dashboard/data-manager');
+    else if (role === 'RegulatoryOfficer') this.nav.back('/dashboard/regulatory');
+    else if (role === 'ClinicalTrialManager') this.nav.back('/dashboard/ctm');
+    else                                   this.nav.back('/dashboard/investigator');
   }
 }

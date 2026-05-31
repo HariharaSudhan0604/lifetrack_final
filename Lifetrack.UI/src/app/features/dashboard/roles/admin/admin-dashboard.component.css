@@ -30,11 +30,15 @@
 
 .hdr-btn {
   display: flex; align-items: center;
-  padding: 6px 12px; font-size: 13px;
-  background: #fff; border: 1px solid #e5e7eb;
-  border-radius: 8px; cursor: pointer; color: inherit;
+  padding: 7px 14px; font-size: 13px; font-weight: 500;
+  background: #ede9fe; border: 1px solid #c4b5fd;
+  border-radius: 8px; cursor: pointer; color: #4c1d95;
+  transition: background 0.15s, box-shadow 0.15s;
 }
-.hdr-btn:hover { background: #f9fafb; }
+.hdr-btn:hover {
+  background: #ddd6fe;
+  box-shadow: 0 2px 6px rgba(109, 40, 217, 0.15);
+}
 
 .hdr-btn-sm {
   padding: 4px 10px; font-size: 12px;
@@ -169,64 +173,3 @@
   .adm-dash  { padding: 16px; }
 }
 
-/* ── AE Detail Modal (preserved from prior implementation) ────────────── */
-.ae-modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1000; padding: 20px;
-}
-.ae-modal-card {
-  background: #fff; border-radius: 16px;
-  width: 100%; max-width: 520px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-}
-.ae-modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 24px 18px;
-  background: linear-gradient(135deg, #2d0067 0%, #7c3aed 100%);
-  color: #fff;
-}
-.ae-modal-header-left { display: flex; align-items: center; gap: 14px; }
-.ae-modal-icon {
-  width: 42px; height: 42px; border-radius: 10px;
-  background: rgba(255,255,255,0.18);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.ae-modal-title { margin: 0; font-size: 1.1rem; font-weight: 700; }
-.ae-modal-sub   { margin: 2px 0 0; font-size: 0.8rem; opacity: 0.82; }
-.ae-modal-close {
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.35);
-  color: #fff; width: 30px; height: 30px;
-  border-radius: 7px; cursor: pointer; font-size: 0.85rem;
-  display: flex; align-items: center; justify-content: center;
-}
-.ae-modal-close:hover { background: rgba(255,255,255,0.35); }
-.ae-modal-badges { display: flex; gap: 8px; padding: 16px 24px 0; }
-.badge-lg { padding: 5px 14px !important; font-size: 0.8rem !important; }
-.ae-modal-grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: 0; padding: 16px 24px 4px;
-}
-.ae-field { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 8px; }
-.ae-field:hover { background: #f8fafc; }
-.ae-field-label { font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
-.ae-field-value { font-size: 0.9rem; font-weight: 600; color: #1e293b; }
-.ae-field-full {
-  margin: 0 24px 8px; padding: 10px 12px;
-  background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px;
-}
-.ae-field-desc { margin: 4px 0 0; font-size: 0.875rem; color: #475569; line-height: 1.6; }
-.ae-modal-footer {
-  display: flex; justify-content: flex-end;
-  padding: 14px 24px 20px;
-  border-top: 1px solid #f1f5f9;
-}
-.btn-close-modal {
-  padding: 8px 22px; background: #f8fafc;
-  border: 1.5px solid #e2e8f0; border-radius: 8px;
-  font-size: 0.875rem; font-weight: 600; color: #64748b; cursor: pointer;
-}
-.btn-close-modal:hover { background: #f1f5f9; }

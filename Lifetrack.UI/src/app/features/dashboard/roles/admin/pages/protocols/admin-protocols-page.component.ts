@@ -33,7 +33,6 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
   listTotalPages  = 1;
   searchTerm      = '';
   filterStatus    = '';
-  filterPhase     = '';
   private searchTimer: any;
 
   readonly phases   = ['Preclinical', 'Phase1', 'Phase2', 'Phase3', 'Phase4'];
@@ -47,12 +46,14 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
   createSuccess    = false;
 
   // ── Edit modal ─────────────────────────────────────────────────────────────
-  showEditModal  = false;
-  editingItem: any = null;
+  showEditModal               = false;
+  editingItem: any            = null;
   editForm!: FormGroup;
-  editSubmitting = false;
-  editError      = '';
-  editSuccess    = false;
+  editSubmitting              = false;
+  editError                   = '';
+  editSuccess                 = false;
+  editProtocolHasAssignments  = false;
+  editCheckingAssignments     = false;
 
   // ── Delete modal ───────────────────────────────────────────────────────────
   showDeleteConfirm = false;
@@ -83,7 +84,6 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.createForm = this.fb.group({
       title:     ['', [Validators.required, Validators.minLength(3), Validators.maxLength(300)]],
-      phase:     ['', Validators.required],
       startDate: ['', Validators.required],
       endDate:   [''],
       status:    ['Draft', Validators.required]
@@ -91,7 +91,6 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
 
     this.editForm = this.fb.group({
       title:     ['', [Validators.required, Validators.minLength(3), Validators.maxLength(300)]],
-      phase:     ['', Validators.required],
       startDate: ['', Validators.required],
       endDate:   [''],
       status:    ['', Validators.required]
@@ -100,6 +99,7 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
     this.assignForm = this.fb.group({
       siteID:         ['', Validators.required],
       investigatorID: ['', Validators.required],
+      phase:          ['', Validators.required],
       initiationDate: [''],
       status:         ['Pending', Validators.required]
     });
@@ -121,7 +121,6 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
   clearFilters() {
     this.searchTerm = '';
     this.filterStatus = '';
-    this.filterPhase = '';
     this.loadProtocols(1);
   }
 
@@ -132,7 +131,6 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
     const qs = new URLSearchParams({ page: String(page), pageSize: String(this.listPageSize) });
     if (this.searchTerm.trim()) qs.set('search', this.searchTerm.trim());
     if (this.filterStatus) qs.set('status', this.filterStatus);
-    if (this.filterPhase)  qs.set('phase', this.filterPhase);
 
     this.http.get<any>(`${environment.apiUrl}/protocols?${qs}`).subscribe({
       next: r => {
@@ -170,7 +168,7 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
     this.createSubmitting = true; this.createError = '';
     const v = this.createForm.value;
     const body: any = {
-      title: v.title.trim(), phase: v.phase,
+      title: v.title.trim(),
       startDate: v.startDate, status: v.status
     };
     if (v.endDate) body.endDate = v.endDate;
@@ -193,15 +191,30 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
 
   // ── Edit ───────────────────────────────────────────────────────────────────
   openEditModal(p: any) {
-    this.editingItem = p;
+    this.editingItem                = p;
+    this.editProtocolHasAssignments = false;
+    this.editCheckingAssignments    = true;
     this.editForm.patchValue({
-      title: p.title, phase: p.phase,
+      title:     p.title,
       startDate: this.toDateInput(p.startDate),
       endDate:   p.endDate ? this.toDateInput(p.endDate) : '',
-      status: p.status
+      status:    p.status
     });
     this.editError = ''; this.editSuccess = false;
     this.showEditModal = true;
+
+    // Check if this protocol has any site assignments to decide whether "Terminated" is allowed
+    this.http.get<any>(`${environment.apiUrl}/site-protocols?protocolId=${p.protocolID}&pageSize=1`).subscribe({
+      next: r => {
+        this.editProtocolHasAssignments = (r.totalCount ?? 0) > 0;
+        this.editCheckingAssignments    = false;
+        // Allow keeping an existing "Terminated" status unchanged
+        if (this.editProtocolHasAssignments && this.editForm.get('status')?.value === 'Terminated') {
+          this.editProtocolHasAssignments = false;
+        }
+      },
+      error: () => { this.editCheckingAssignments = false; }
+    });
   }
 
   closeEditModal() {
@@ -214,7 +227,7 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
     this.editSubmitting = true; this.editError = '';
     const v = this.editForm.value;
     const body: any = {
-      title: v.title.trim(), phase: v.phase,
+      title: v.title.trim(),
       startDate: v.startDate, status: v.status
     };
     if (v.endDate) body.endDate = v.endDate;
@@ -321,6 +334,7 @@ export class AdminProtocolsPageComponent implements OnInit, OnDestroy {
       protocolID:     this.assigningProtocol.protocolID,
       siteID:         Number(v.siteID),
       investigatorID: Number(v.investigatorID),
+      phase:          v.phase,
       status:         v.status
     };
     if (v.initiationDate) body.initiationDate = v.initiationDate;

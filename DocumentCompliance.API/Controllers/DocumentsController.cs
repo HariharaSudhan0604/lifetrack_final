@@ -12,20 +12,19 @@ namespace DocumentCompliance.API.Controllers;
 public class DocumentsController : ControllerBase
 {
     private readonly IDocumentService _svc;
-
     public DocumentsController(IDocumentService svc) => _svc = svc;
 
     [HttpGet]
     public async Task<ActionResult<PagedResult<DocumentResponse>>> List(
-        [FromQuery] long? protocolId,
+        [FromQuery] long?   protocolId,
         [FromQuery] string? status,
-        [FromQuery] string? type,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] string? category,
+        [FromQuery] int     page     = 1,
+        [FromQuery] int     pageSize = 50)
     {
         if (page < 1) page = 1;
-        if (pageSize is <= 0 or > 200) pageSize = 20;
-        return Ok(await _svc.ListAsync(protocolId, status, type, page, pageSize));
+        if (pageSize is <= 0 or > 200) pageSize = 50;
+        return Ok(await _svc.ListAsync(protocolId, status, category, page, pageSize));
     }
 
     [HttpGet("{id:long}")]
@@ -36,7 +35,7 @@ public class DocumentsController : ControllerBase
     }
 
     [HttpPost]
-    [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.RegulatoryOfficer)]
+    [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.RegulatoryOfficer, RolesEnum.DataManager)]
     public async Task<ActionResult<DocumentResponse>> Create([FromBody] CreateDocumentRequest req)
     {
         var created = await _svc.CreateAsync(req);
@@ -44,7 +43,7 @@ public class DocumentsController : ControllerBase
     }
 
     [HttpPut("{id:long}")]
-    [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.RegulatoryOfficer)]
+    [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.RegulatoryOfficer, RolesEnum.DataManager)]
     public async Task<ActionResult<DocumentResponse>> Update(long id, [FromBody] UpdateDocumentRequest req)
     {
         try
@@ -54,5 +53,4 @@ public class DocumentsController : ControllerBase
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
-
 }

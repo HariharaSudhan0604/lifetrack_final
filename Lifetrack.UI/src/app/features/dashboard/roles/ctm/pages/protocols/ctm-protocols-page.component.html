@@ -24,17 +24,13 @@
       <option value="">All Statuses</option>
       <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
     </select>
-    <select class="filter-select" [(ngModel)]="filterPhase" (change)="onFilterChange()">
-      <option value="">All Phases</option>
-      <option *ngFor="let p of phases" [value]="p">{{ p }}</option>
-    </select>
   </div>
 
   <!-- Table Card -->
   <div class="table-card">
     <div *ngIf="listLoading" class="loading-state"><div class="spinner"></div></div>
     <div *ngIf="!listLoading && protocolList.length === 0" class="empty-state">
-      <p>{{ (searchTerm || filterStatus || filterPhase) ? 'No protocols match your filters.' : 'No protocols found.' }}</p>
+      <p>{{ (searchTerm || filterStatus) ? 'No protocols match your filters.' : 'No protocols found.' }}</p>
     </div>
 
     <div class="table-wrapper" *ngIf="!listLoading && protocolList.length > 0">
@@ -43,7 +39,6 @@
           <tr>
             <th class="col-num">#</th>
             <th>Title</th>
-            <th>Phase</th>
             <th>Start Date</th>
             <th>End Date</th>
             <th>Status</th>
@@ -54,7 +49,6 @@
           <tr *ngFor="let p of protocolList; let i = index">
             <td class="col-num">{{ (listPage - 1) * listPageSize + i + 1 }}</td>
             <td class="cell-title">{{ p.title }}</td>
-            <td><span class="badge" [ngClass]="phaseClass(p.phase)">{{ p.phase }}</span></td>
             <td class="cell-date">{{ p.startDate | date:'MMM d, y' }}</td>
             <td class="cell-date">{{ p.endDate ? (p.endDate | date:'MMM d, y') : '—' }}</td>
             <td><span class="badge" [ngClass]="statusClass(p.status)">{{ p.status }}</span></td>
@@ -105,22 +99,11 @@
             [class.invalid]="cf('title').touched && cf('title').invalid" placeholder="Protocol title" />
           <span class="field-error" *ngIf="fieldErr(cf('title'))">{{ fieldErr(cf('title')) }}</span>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Phase <span class="required">*</span></label>
-            <select class="form-input form-select" formControlName="phase"
-              [class.invalid]="cf('phase').touched && cf('phase').invalid">
-              <option value="" disabled>— Select —</option>
-              <option *ngFor="let p of phases" [value]="p">{{ p }}</option>
-            </select>
-            <span class="field-error" *ngIf="fieldErr(cf('phase'))">{{ fieldErr(cf('phase')) }}</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Status <span class="required">*</span></label>
-            <select class="form-input form-select" formControlName="status">
-              <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
-            </select>
-          </div>
+        <div class="form-group">
+          <label class="form-label">Status <span class="required">*</span></label>
+          <select class="form-input form-select" formControlName="status">
+            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          </select>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -131,7 +114,9 @@
           </div>
           <div class="form-group">
             <label class="form-label">End Date <span class="optional">(optional)</span></label>
-            <input type="date" class="form-input" formControlName="endDate" />
+            <input type="date" class="form-input" formControlName="endDate"
+              [class.invalid]="!!dateRangeErr(createForm)" />
+            <span class="field-error" *ngIf="dateRangeErr(createForm)">{{ dateRangeErr(createForm) }}</span>
           </div>
         </div>
         <div class="form-error-banner" *ngIf="createError">{{ createError }}</div>
@@ -170,28 +155,30 @@
             [class.invalid]="ef('title').touched && ef('title').invalid" placeholder="Protocol title" />
           <span class="field-error" *ngIf="fieldErr(ef('title'))">{{ fieldErr(ef('title')) }}</span>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Phase <span class="required">*</span></label>
-            <select class="form-input form-select" formControlName="phase">
-              <option *ngFor="let p of phases" [value]="p">{{ p }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Status <span class="required">*</span></label>
-            <select class="form-input form-select" formControlName="status">
-              <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
-            </select>
-          </div>
+        <div class="form-group">
+          <label class="form-label">Status <span class="required">*</span></label>
+          <select class="form-input form-select" formControlName="status">
+            <option *ngFor="let s of statuses" [value]="s"
+              [disabled]="s === 'Terminated' && editProtocolHasAssignments">
+              {{ s }}{{ s === 'Terminated' && editProtocolHasAssignments ? ' (has site assignments)' : '' }}
+            </option>
+          </select>
+          <span class="field-hint-warn" *ngIf="editProtocolHasAssignments">
+            "Terminated" is unavailable — remove all site assignments before terminating this protocol.
+          </span>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Start Date <span class="required">*</span></label>
-            <input type="date" class="form-input" formControlName="startDate" />
+            <input type="date" class="form-input" formControlName="startDate"
+              [class.invalid]="ef('startDate').touched && ef('startDate').invalid" />
+            <span class="field-error" *ngIf="fieldErr(ef('startDate'))">{{ fieldErr(ef('startDate')) }}</span>
           </div>
           <div class="form-group">
             <label class="form-label">End Date <span class="optional">(optional)</span></label>
-            <input type="date" class="form-input" formControlName="endDate" />
+            <input type="date" class="form-input" formControlName="endDate"
+              [class.invalid]="!!dateRangeErr(editForm)" />
+            <span class="field-error" *ngIf="dateRangeErr(editForm)">{{ dateRangeErr(editForm) }}</span>
           </div>
         </div>
         <div class="form-error-banner" *ngIf="editError">{{ editError }}</div>
@@ -204,6 +191,30 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+
+<!-- DELETE MODAL -->
+<div class="sub-backdrop" *ngIf="showDeleteConfirm" (click)="onSubBackdrop($event, closeDeleteConfirm.bind(this))">
+  <div class="sub-card sub-card-sm">
+    <div class="modal-header">
+      <h2 class="modal-title">Delete Protocol</h2>
+      <button class="modal-close" (click)="closeDeleteConfirm()" [disabled]="deleteLoading">&times;</button>
+    </div>
+    <div class="delete-body">
+      <div class="delete-icon"><svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <p class="delete-msg">Delete <strong>{{ deletingItem?.title }}</strong>?</p>
+      <p class="delete-warn">Active protocols cannot be deleted — pause or terminate first.</p>
+      <div class="form-error-banner" *ngIf="deleteError">{{ deleteError }}</div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeDeleteConfirm()" [disabled]="deleteLoading">Cancel</button>
+      <button type="button" class="btn-danger" (click)="confirmDelete()" [disabled]="deleteLoading">
+        <span *ngIf="!deleteLoading">Delete</span>
+        <span *ngIf="deleteLoading" class="btn-spinner"></span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -225,8 +236,7 @@
     <form *ngIf="!assignSuccess" [formGroup]="assignForm" (ngSubmit)="submitAssign()" novalidate>
       <div class="form-body">
         <div *ngIf="dropdownsLoading" class="dropdown-loading">
-          <div class="spinner"></div>
-          <span>Loading options…</span>
+          <div class="spinner"></div><span>Loading options…</span>
         </div>
         <ng-container *ngIf="!dropdownsLoading">
           <div class="form-group">
@@ -236,7 +246,7 @@
               <option value="" disabled>— Select site —</option>
               <option *ngFor="let s of siteOptions" [value]="s.siteID">{{ s.name }} · {{ s.location }}</option>
             </select>
-            <span class="field-error" *ngIf="fieldErr(af('siteID'))">{{ fieldErr(af('siteID')) }}</span>
+            <span class="field-error" *ngIf="af('siteID').touched && af('siteID').invalid">Required.</span>
           </div>
           <div class="form-group">
             <label class="form-label">Investigator <span class="required">*</span></label>
@@ -247,6 +257,15 @@
             </select>
             <span class="field-error" *ngIf="af('investigatorID').touched && af('investigatorID').invalid">Required.</span>
             <span class="field-hint" *ngIf="investigatorOptions.length === 0">No active investigators found.</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phase <span class="required">*</span></label>
+            <select class="form-input form-select" formControlName="phase"
+              [class.invalid]="af('phase').touched && af('phase').invalid">
+              <option value="" disabled>— Select phase —</option>
+              <option *ngFor="let p of phases" [value]="p">{{ p }}</option>
+            </select>
+            <span class="field-error" *ngIf="af('phase').touched && af('phase').invalid">Required.</span>
           </div>
           <div class="form-row">
             <div class="form-group">

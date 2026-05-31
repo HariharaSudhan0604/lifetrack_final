@@ -15,10 +15,11 @@ public class KpiReportRepository : IKpiReportRepository
         => _db.KpiReports.FirstOrDefaultAsync(r => r.ReportID == id);
 
     public async Task<(IReadOnlyList<KpiReport> Items, int TotalCount)> ListAsync(
-        string? scope, int page, int pageSize)
+        string? scope, string? status, int page, int pageSize)
     {
         var q = _db.KpiReports.AsQueryable();
-        if (!string.IsNullOrEmpty(scope)) q = q.Where(r => r.Scope == scope);
+        if (!string.IsNullOrEmpty(scope))  q = q.Where(r => r.Scope  == scope);
+        if (!string.IsNullOrEmpty(status)) q = q.Where(r => r.Status == status);
         q = q.OrderByDescending(r => r.GeneratedDate);
         var total = await q.CountAsync();
         var items = await q.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();

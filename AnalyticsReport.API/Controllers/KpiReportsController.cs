@@ -18,12 +18,13 @@ public class KpiReportsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResult<KpiReportResponse>>> List(
         [FromQuery] string? scope,
+        [FromQuery] string? status,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
         if (page < 1) page = 1;
         if (pageSize is <= 0 or > 200) pageSize = 20;
-        return Ok(await _svc.ListAsync(scope, page, pageSize));
+        return Ok(await _svc.ListAsync(scope, status, page, pageSize));
     }
 
     [HttpGet("{id:long}")]
@@ -34,7 +35,7 @@ public class KpiReportsController : ControllerBase
     }
 
     [HttpPost]
-    [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.DataManager, RolesEnum.RegulatoryOfficer)]
+    [RoleAuthorize(RolesEnum.Admin, RolesEnum.DataManager)]
     public async Task<ActionResult<KpiReportResponse>> Create([FromBody] CreateKpiReportRequest req)
     {
         try
@@ -43,6 +44,14 @@ public class KpiReportsController : ControllerBase
             return CreatedAtAction(nameof(Get), new { id = created.ReportID }, created);
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    [HttpPatch("{id:long}/review")]
+    [RoleAuthorize(RolesEnum.RegulatoryOfficer)]
+    public async Task<ActionResult<KpiReportResponse>> Review(long id)
+    {
+        var result = await _svc.ReviewAsync(id);
+        return result is null ? NotFound() : Ok(result);
     }
 
 }

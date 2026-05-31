@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { NavigationService } from '../../../../../../core/services/navigation.service';
 import { environment } from '../../../../../../../environments/environment';
 
@@ -34,18 +35,28 @@ export class AdminSitesPageComponent implements OnInit, OnDestroy {
   createSuccess    = false;
 
   // ── Edit modal ─────────────────────────────────────────────────────────────
-  showEditModal  = false;
-  editingItem: any = null;
+  showEditModal         = false;
+  editingItem: any      = null;
   editForm!: FormGroup;
-  editSubmitting = false;
-  editError      = '';
-  editSuccess    = false;
+  editSubmitting        = false;
+  editError             = '';
+  editSuccess           = false;
+  editSiteHasProtocols  = false;
+  editCheckingProtocols = false;
 
   // ── Delete modal ───────────────────────────────────────────────────────────
   showDeleteConfirm = false;
   deletingItem: any = null;
   deleteLoading     = false;
   deleteError       = '';
+
+  // ── Detail drawer ──────────────────────────────────────────────────────────
+  showDetailDrawer   = false;
+  detailSite: any    = null;
+  siteProtocols: any[]    = [];
+  allProtocols: any[]     = [];
+  allInvestigators: any[] = [];
+  detailLoading      = false;
 
   constructor(
     private http: HttpClient,
@@ -150,10 +161,25 @@ export class AdminSitesPageComponent implements OnInit, OnDestroy {
 
   // ── Edit ───────────────────────────────────────────────────────────────────
   openEditModal(s: any) {
-    this.editingItem = s;
+    this.editingItem          = s;
+    this.editSiteHasProtocols = false;
+    this.editCheckingProtocols = true;
     this.editForm.patchValue({ name: s.name, location: s.location, status: s.status });
     this.editError = ''; this.editSuccess = false;
     this.showEditModal = true;
+
+    // Check if this site has any protocol assignments to decide whether "Closed" is allowed
+    this.http.get<any>(`${environment.apiUrl}/site-protocols?siteId=${s.siteID}&pageSize=1`).subscribe({
+      next: r => {
+        this.editSiteHasProtocols  = (r.totalCount ?? 0) > 0;
+        this.editCheckingProtocols = false;
+        // If the current status is already Closed, keep it selectable (it was already set that way)
+        if (this.editSiteHasProtocols && this.editForm.get('status')?.value === 'Closed') {
+          this.editSiteHasProtocols = false; // allow keeping the existing Closed value unchanged
+        }
+      },
+      error: () => { this.editCheckingProtocols = false; }
+    });
   }
 
   closeEditModal() {
@@ -209,6 +235,50 @@ export class AdminSitesPageComponent implements OnInit, OnDestroy {
         this.deleteError = err?.error?.error ?? err?.error?.message ?? 'Failed to delete site.';
       }
     });
+  }
+
+  // ── Detail drawer ──────────────────────────────────────────────────────────
+  openDetailDrawer(site: any) {
+    this.detailSite        = site;
+    this.siteProtocols     = [];
+    this.allProtocols      = [];
+    this.allInvestigators  = [];
+    this.detailLoading     = true;
+    this.showDetailDrawer  = true;
+
+    forkJoin({
+      siteProtos:    this.http.get<any>(`${environment.apiUrl}/site-protocols?siteId=${site.siteID}&pageSize=100`),
+      protocols:     this.http.get<any>(`${environment.apiUrl}/protocols?page=1&pageSize=100`),
+      investigators: this.http.get<any>(`${environment.apiUrl}/users?pageSize=200`)
+    }).subscribe({
+      next: ({ siteProtos, protocols, investigators }) => {
+        this.siteProtocols    = siteProtos.items    ?? [];
+        this.allProtocols     = protocols.items     ?? [];
+        this.allInvestigators = investigators.items ?? [];
+        this.detailLoading    = false;
+      },
+      error: () => { this.detailLoading = false; }
+    });
+  }
+
+  closeDetailDrawer() { this.showDetailDrawer = false; this.detailSite = null; }
+
+  protocolOf(protocolID: number): any {
+    return this.allProtocols.find(p => p.protocolID === protocolID) ?? null;
+  }
+
+  investigatorOf(investigatorID: number | null): string {
+    if (!investigatorID) return '—';
+    const u = this.allInvestigators.find(u => u.userID === investigatorID);
+    return u?.name ?? `ID #${investigatorID}`;
+  }
+
+  spStatusClass(s: string): string {
+    const m: Record<string, string> = {
+      Active: 'badge-green', Pending: 'badge-amber',
+      Completed: 'badge-blue', Terminated: 'badge-red', Suspended: 'badge-red'
+    };
+    return m[s] ?? 'badge-slate';
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

@@ -1,16 +1,32 @@
+using System.Security.Claims;
 using DocumentCompliance.API.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 namespace DocumentCompliance.API.Data;
 
 public class DocumentDbContext : DbContext
 {
-    public DocumentDbContext(DbContextOptions<DocumentDbContext> options) : base(options) { }
+    private readonly IHttpContextAccessor? _httpCtx;
+
+    public DocumentDbContext(DbContextOptions<DocumentDbContext> options,
+                             IHttpContextAccessor? httpCtx = null)
+        : base(options)
+    {
+        _httpCtx = httpCtx;
+    }
 
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
-    /// <summary>Set this before SaveChangesAsync to stamp the current user on audit rows.</summary>
-    public long? CurrentUserID { get; set; }
+    /// <summary>Resolves the acting user ID from the JWT claim, or null for system operations.</summary>
+    private long? CurrentUserID
+    {
+        get
+        {
+            var raw = _httpCtx?.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            return long.TryParse(raw, out var id) ? id : null;
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -20,10 +36,13 @@ public class DocumentDbContext : DbContext
         {
             e.ToTable("Documents");
             e.HasKey(d => d.DocumentID);
-            e.Property(d => d.Type).HasMaxLength(100).IsRequired();
+            e.Property(d => d.Title).HasMaxLength(300).IsRequired();
+            e.Property(d => d.Category).HasMaxLength(100).IsRequired();
             e.Property(d => d.Version).HasMaxLength(20).IsRequired();
             e.Property(d => d.Status).HasMaxLength(50).IsRequired();
+            e.Property(d => d.Notes).HasMaxLength(1000);
             e.HasIndex(d => d.ProtocolID);
+            e.HasIndex(d => d.Category);
             e.HasIndex(d => d.Status);
             e.HasIndex(d => d.UploadedBy);
             e.HasIndex(d => d.UploadedAt);

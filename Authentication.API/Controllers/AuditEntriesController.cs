@@ -53,6 +53,10 @@ public class AuditEntriesController : ControllerBase
             })
             .ToListAsync();
 
+        // SQL Server returns DateTime with Kind=Unspecified; mark as UTC so JSON includes 'Z'
+        foreach (var item in items)
+            item.ChangedAt = DateTime.SpecifyKind(item.ChangedAt, DateTimeKind.Utc);
+
         return Ok(new PagedResult<AuditEntryDto>
         {
             Page = page,

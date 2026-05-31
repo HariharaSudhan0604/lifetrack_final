@@ -40,14 +40,14 @@ public class SiteProtocolService : ISiteProtocolService
     {
         if (await _sites.GetByIdAsync(req.SiteID) is null) throw new DomainException($"Site {req.SiteID} not found.");
         if (await _protocols.GetByIdAsync(req.ProtocolID) is null) throw new DomainException($"Protocol {req.ProtocolID} not found.");
-        var sp = new SiteProtocol { SiteID = req.SiteID, ProtocolID = req.ProtocolID, InvestigatorID = req.InvestigatorID, InitiationDate = req.InitiationDate, Status = req.Status };
+        var sp = new SiteProtocol { SiteID = req.SiteID, ProtocolID = req.ProtocolID, InvestigatorID = req.InvestigatorID, InitiationDate = req.InitiationDate, Phase = req.Phase, Status = req.Status };
         await _repo.AddAsync(sp); BumpVersion(); return Map(sp);
     }
 
     public async Task<SiteProtocolResponse?> UpdateAsync(long id, UpdateSiteProtocolRequest req)
     {
         var sp = await _repo.GetByIdAsync(id); if (sp is null) return null;
-        sp.InvestigatorID = req.InvestigatorID; sp.InitiationDate = req.InitiationDate; sp.Status = req.Status;
+        sp.InvestigatorID = req.InvestigatorID; sp.InitiationDate = req.InitiationDate; sp.Phase = req.Phase; sp.Status = req.Status;
         await _repo.UpdateAsync(sp); Invalidate(id); return Map(sp);
     }
 
@@ -55,5 +55,5 @@ public class SiteProtocolService : ISiteProtocolService
     private void BumpVersion() => _cache.Set(VersionKey, GetVersion() + 1, new MemoryCacheEntryOptions { Priority = CacheItemPriority.NeverRemove });
     private void Invalidate(long id) { _cache.Remove($"{ItemPrefix}:{id}"); BumpVersion(); }
 
-    private static SiteProtocolResponse Map(SiteProtocol sp) => new() { SiteProtocolID = sp.SiteProtocolID, SiteID = sp.SiteID, ProtocolID = sp.ProtocolID, InvestigatorID = sp.InvestigatorID, InitiationDate = sp.InitiationDate, Status = sp.Status };
+    private static SiteProtocolResponse Map(SiteProtocol sp) => new() { SiteProtocolID = sp.SiteProtocolID, SiteID = sp.SiteID, ProtocolID = sp.ProtocolID, InvestigatorID = sp.InvestigatorID, InitiationDate = sp.InitiationDate, Phase = sp.Phase, Status = sp.Status };
 }

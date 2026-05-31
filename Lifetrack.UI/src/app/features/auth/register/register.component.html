@@ -83,9 +83,13 @@
             type="date"
             class="input-date"
             formControlName="dob"
+            [min]="minDob"
             [max]="today"
             [class.is-invalid]="dob.invalid && dob.touched" />
           <div class="field-error" *ngIf="dob.touched && dob.hasError('required')">Date of birth is required.</div>
+          <div class="field-error" *ngIf="dob.touched && dob.hasError('dobFuture')">Date of birth cannot be today or in the future.</div>
+          <div class="field-error" *ngIf="dob.touched && dob.hasError('dobMinAge')">You must be at least 18 years old to register.</div>
+          <div class="field-error" *ngIf="dob.touched && dob.hasError('dobMaxAge')">Please enter a valid date of birth.</div>
         </div>
 
         <!-- Phone (optional) -->
@@ -98,8 +102,10 @@
               type="tel"
               formControlName="phone"
               placeholder="+1-555-0100"
-              autocomplete="tel" />
+              autocomplete="tel"
+              [class.is-invalid]="phone.invalid && phone.touched" />
           </div>
+          <div class="field-error" *ngIf="phone.touched && phone.hasError('phonePattern')">Enter a valid 10-digit mobile number (e.g. 9876543210).</div>
         </div>
 
         <!-- Password -->

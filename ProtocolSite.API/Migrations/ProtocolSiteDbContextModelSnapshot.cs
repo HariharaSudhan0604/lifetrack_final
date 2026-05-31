@@ -70,11 +70,6 @@ namespace ProtocolSite.API.Migrations
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Phase")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
 
@@ -89,8 +84,6 @@ namespace ProtocolSite.API.Migrations
                         .HasColumnType("nvarchar(300)");
 
                     b.HasKey("ProtocolID");
-
-                    b.HasIndex("Phase");
 
                     b.HasIndex("Status");
 
@@ -141,6 +134,11 @@ namespace ProtocolSite.API.Migrations
                     b.Property<long?>("InvestigatorID")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("Phase")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<long>("ProtocolID")
                         .HasColumnType("bigint");
 
@@ -155,6 +153,8 @@ namespace ProtocolSite.API.Migrations
                     b.HasKey("SiteProtocolID");
 
                     b.HasIndex("InvestigatorID");
+
+                    b.HasIndex("Phase");
 
                     b.HasIndex("ProtocolID");
 

@@ -41,7 +41,7 @@
             <th>Name</th>
             <th>Location</th>
             <th>Status</th>
-            <th class="col-actions">Actions</th>
+            <th class="col-actions col-actions-wide">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -52,6 +52,7 @@
             <td><span class="badge" [ngClass]="statusClass(s.status)">{{ s.status }}</span></td>
             <td class="col-actions">
               <div class="tbl-actions">
+                <button class="tbl-btn tbl-view" (click)="openDetailDrawer(s)" title="View details">View</button>
                 <button class="tbl-btn tbl-edit" (click)="openEditModal(s)" title="Edit">Edit</button>
               </div>
             </td>
@@ -122,6 +123,67 @@
 </div>
 
 
+<!-- DETAIL DRAWER -->
+<div class="drawer-overlay" *ngIf="showDetailDrawer" (click)="closeDetailDrawer()"></div>
+<aside class="detail-drawer" [class.drawer-open]="showDetailDrawer">
+  <!-- Drawer header -->
+  <div class="drawer-header">
+    <div class="drawer-header-info">
+      <p class="drawer-site-name">{{ detailSite?.name }}</p>
+      <p class="drawer-site-loc">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        {{ detailSite?.location }}
+      </p>
+    </div>
+    <button class="drawer-close" (click)="closeDetailDrawer()">&times;</button>
+  </div>
+
+  <!-- Drawer body -->
+  <div class="drawer-body">
+    <p class="drawer-section-title">Assigned Protocols</p>
+
+    <!-- Loading -->
+    <div *ngIf="detailLoading" class="drawer-loading">
+      <div class="drawer-spinner"></div>
+      <span>Loading protocols…</span>
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!detailLoading && siteProtocols.length === 0" class="drawer-empty">
+      No protocols assigned to this site yet.
+    </div>
+
+    <!-- Protocol cards -->
+    <div class="proto-card" *ngFor="let sp of siteProtocols">
+      <div class="proto-card-top">
+        <div class="proto-card-title">
+          {{ protocolOf(sp.protocolID)?.title ?? ('Protocol #' + sp.protocolID) }}
+        </div>
+        <span class="badge" [ngClass]="spStatusClass(sp.status)">{{ sp.status }}</span>
+      </div>
+      <div class="proto-card-meta">
+        <div class="meta-item">
+          <span class="meta-label">Phase</span>
+          <span class="meta-value">{{ sp.phase ?? '—' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Investigator</span>
+          <span class="meta-value">{{ investigatorOf(sp.investigatorID) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Initiation date</span>
+          <span class="meta-value">{{ sp.initiationDate ? (sp.initiationDate | date:'MMM d, y') : '—' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Protocol status</span>
+          <span class="meta-value">{{ protocolOf(sp.protocolID)?.status ?? '—' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+
 <!-- EDIT MODAL -->
 <div class="sub-backdrop" *ngIf="showEditModal" (click)="onSubBackdrop($event, closeEditModal.bind(this))">
   <div class="sub-card">
@@ -153,8 +215,14 @@
         <div class="form-group">
           <label class="form-label">Status <span class="required">*</span></label>
           <select class="form-input form-select" formControlName="status">
-            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+            <option *ngFor="let s of statuses" [value]="s"
+              [disabled]="s === 'Closed' && editSiteHasProtocols">
+              {{ s }}{{ s === 'Closed' && editSiteHasProtocols ? ' (has active protocols)' : '' }}
+            </option>
           </select>
+          <span class="field-hint-warn" *ngIf="editSiteHasProtocols">
+            "Closed" is unavailable — remove all protocol assignments before closing this site.
+          </span>
         </div>
         <div class="form-error-banner" *ngIf="editError">{{ editError }}</div>
       </div>

@@ -6,9 +6,14 @@
       <button class="btn-back" (click)="goBack()">&#8592; Back</button>
       <div class="header-titles">
         <h1 class="page-title">Adverse Events</h1>
-        <p class="page-subtitle">Monitor and manage adverse events across all protocols</p>
+        <p class="page-subtitle" *ngIf="isInvestigator">Report and track adverse events for your enrolled patients</p>
+        <p class="page-subtitle" *ngIf="isRegulatoryOfficer">Review and update status of adverse events across all protocols</p>
+        <p class="page-subtitle" *ngIf="!isInvestigator && !isRegulatoryOfficer">Monitor and manage adverse events across all protocols</p>
       </div>
     </div>
+    <button class="btn-primary" *ngIf="isInvestigator" (click)="openReportModal()">
+      + Report AE
+    </button>
   </div>
 
   <!-- Filter Bar -->
@@ -26,7 +31,7 @@
   </div>
 
   <!-- Error Alert -->
-  <div class="alert alert-error" *ngIf="error && !showEditModal">{{ error }}</div>
+  <div class="alert alert-error" *ngIf="error && !showReviewModal && !showReportModal">{{ error }}</div>
 
   <!-- Loading Spinner -->
   <div class="spinner-container" *ngIf="loading">
@@ -46,7 +51,7 @@
           <th>Severity</th>
           <th>Status</th>
           <th>Reported Date</th>
-          <th>Actions</th>
+          <th *ngIf="!isInvestigator">{{ isDataManager ? '' : 'Actions' }}</th>
         </tr>
       </thead>
       <tbody>
@@ -56,10 +61,15 @@
           <td>{{ protocolMap[ae.protocolID] || 'Protocol #' + ae.protocolID }}</td>
           <td class="description-cell">{{ ae.description }}</td>
           <td><span class="badge" [ngClass]="severityClass(ae.severity)">{{ ae.severity }}</span></td>
-          <td><span class="badge" [ngClass]="statusClass(ae.status)">{{ ae.status }}</span></td>
-          <td>{{ ae.reportedDate | date:'mediumDate' }}</td>
           <td>
-            <button class="btn-icon" (click)="openEditModal(ae)" title="Edit Status"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <span class="badge" [ngClass]="statusClass(ae.status)">{{ ae.status }}</span>
+            <span class="badge-escalated" *ngIf="escalatedAEIds.has(ae.eventID)">Escalated</span>
+          </td>
+          <td>{{ ae.reportedDate | date:'mediumDate' }}</td>
+          <td *ngIf="!isInvestigator">
+            <button class="btn-review" [class.btn-view]="isDataManager" (click)="openReviewModal(ae)">
+              {{ isDataManager ? 'View' : 'Review' }}
+            </button>
           </td>
         </tr>
       </tbody>
@@ -67,64 +77,177 @@
 
     <ng-template #emptyState>
       <div class="empty-state">
-        <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-        <p>No adverse events found for the selected filter.</p>
+        <div class="empty-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <p *ngIf="isInvestigator">No adverse events found. Use "+ Report AE" to log a new event.</p>
+        <p *ngIf="!isInvestigator">No adverse events found for the selected filter.</p>
       </div>
     </ng-template>
   </div>
 
-  <!-- Edit Modal -->
-  <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+  <!-- ══ Review Modal ══════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showReviewModal" (click)="closeReviewModal()">
+    <div class="review-box" (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="review-header">
+        <div>
+          <h2 class="review-title">Adverse Event</h2>
+          <p class="review-sub">Full details &amp; review actions</p>
+        </div>
+        <button class="btn-close" (click)="closeReviewModal()">&#10005;</button>
+      </div>
+
+      <div class="review-body" *ngIf="reviewAE">
+
+        <!-- Info grid -->
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Patient</span>
+            <span class="info-value">{{ patientMap[reviewAE.patientID] || 'Patient #' + reviewAE.patientID }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Protocol</span>
+            <span class="info-value">{{ protocolMap[reviewAE.protocolID] || 'Protocol #' + reviewAE.protocolID }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Reported Date</span>
+            <span class="info-value">{{ reviewAE.reportedDate | date:'d MMMM yyyy' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Severity</span>
+            <span class="badge" [ngClass]="severityClass(reviewAE.severity)">{{ reviewAE.severity }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="badge" [ngClass]="statusClass(reviewAE.status)">{{ reviewAE.status }}</span>
+          </div>
+        </div>
+
+        <!-- Full description -->
+        <div class="info-desc">
+          <span class="info-label">Description</span>
+          <p class="desc-text">{{ reviewAE.description }}</p>
+        </div>
+
+        <!-- Escalated notice -->
+        <div class="escalated-notice" *ngIf="escalatedAEIds.has(reviewAE.eventID)">
+          ✓ Escalated to Regulatory Officer
+        </div>
+
+        <div class="review-divider" *ngIf="!isDataManager"></div>
+
+        <!-- Actions — hidden for Data Manager (read-only view) -->
+        <div class="review-actions" *ngIf="!isDataManager">
+          <div class="status-update-section">
+            <span class="action-label">Update Status</span>
+            <div class="status-row">
+              <select class="review-select" [(ngModel)]="reviewStatus">
+                <option value="Reported">Reported</option>
+                <option value="Under Review">Under Review</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+              </select>
+              <button class="btn-save-status" (click)="saveReviewStatus()" [disabled]="reviewSaving">
+                {{ reviewSaving ? 'Saving…' : 'Save' }}
+              </button>
+            </div>
+            <p class="review-success" *ngIf="reviewSuccess">{{ reviewSuccess }}</p>
+            <p class="review-error"   *ngIf="reviewError">{{ reviewError }}</p>
+          </div>
+
+          @if (isCTM && !escalatedAEIds.has(reviewAE.eventID) && reviewAE.status !== 'Resolved' && reviewAE.status !== 'Closed') {
+            @if (!showEscalateConfirm) {
+              <button class="btn-escalate-full" (click)="showEscalateConfirm = true">
+                ⚠ Escalate to Regulatory Officer
+              </button>
+            } @else {
+              <div class="escalate-confirm">
+                <p class="escalate-confirm-msg">This will notify all Regulatory Officers immediately. Are you sure?</p>
+                <div class="escalate-confirm-btns">
+                  <button class="btn-confirm-cancel" (click)="showEscalateConfirm = false">Cancel</button>
+                  <button class="btn-confirm-yes" (click)="escalateFromReview()">Yes, Escalate</button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Report AE Modal (investigator only) ══════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showReportModal" (click)="closeReportModal()">
     <div class="modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2 class="modal-title">Update Adverse Event Status</h2>
-        <button class="btn-close" (click)="closeEditModal()">&#10005;</button>
+        <h2 class="modal-title">Report Adverse Event</h2>
+        <button class="btn-close" (click)="closeReportModal()">&#10005;</button>
       </div>
+      <div class="modal-body">
+        <div class="alert alert-success" *ngIf="reportSuccess">{{ reportSuccess }}</div>
+        <div class="alert alert-error"   *ngIf="reportError">{{ reportError }}</div>
 
-      <div class="modal-body" *ngIf="selectedAE">
+        <form (ngSubmit)="submitReport()">
 
-        <!-- Read-only context block -->
-        <div class="context-block">
-          <div class="context-item">
-            <span class="context-label">Patient</span>
-            <span class="context-value">{{ patientMap[selectedAE.patientID] || 'Patient #' + selectedAE.patientID }}</span>
+          <div class="form-group">
+            <label class="form-label" for="rpPatient">Patient <span class="required">*</span></label>
+            <select id="rpPatient" class="form-select" [(ngModel)]="reportForm.patientID" name="rpPatient"
+              (ngModelChange)="onReportPatientChange()"
+              [class.input-err]="reportFormErrors['patientID']">
+              <option value="">— Select Patient —</option>
+              <option *ngFor="let p of enrolledPatients" [value]="p.patientID">{{ p.name }}</option>
+            </select>
+            <span class="err-msg" *ngIf="reportFormErrors['patientID']">{{ reportFormErrors['patientID'] }}</span>
           </div>
-          <div class="context-item">
-            <span class="context-label">Protocol</span>
-            <span class="context-value">{{ protocolMap[selectedAE.protocolID] || 'Protocol #' + selectedAE.protocolID }}</span>
-          </div>
-          <div class="context-item">
-            <span class="context-label">Description</span>
-            <span class="context-value">{{ selectedAE.description }}</span>
-          </div>
-          <div class="context-item">
-            <span class="context-label">Severity</span>
-            <span class="context-value">
-              <span class="badge" [ngClass]="severityClass(selectedAE.severity)">{{ selectedAE.severity }}</span>
-            </span>
-          </div>
-        </div>
 
-        <!-- Editable Status -->
-        <div class="form-group">
-          <label class="form-label" for="editStatus">Status</label>
-          <select id="editStatus" class="form-select" [(ngModel)]="editStatus">
-            <option value="Open">Open</option>
-            <option value="Under Review">Under Review</option>
-            <option value="Resolved">Resolved</option>
-          </select>
-        </div>
+          <div class="form-group">
+            <label class="form-label" for="rpProtocol">Protocol <span class="required">*</span></label>
+            <select id="rpProtocol" class="form-select" [(ngModel)]="reportForm.protocolID" name="rpProtocol"
+              [class.input-err]="reportFormErrors['protocolID']"
+              [disabled]="!reportForm.patientID">
+              <option value="">{{ reportForm.patientID ? '— Select Protocol —' : '— Select a patient first —' }}</option>
+              <option *ngFor="let p of filteredProtocols" [value]="p.protocolID">{{ p.title }}</option>
+            </select>
+            <span class="err-msg" *ngIf="reportFormErrors['protocolID']">{{ reportFormErrors['protocolID'] }}</span>
+          </div>
 
-        <div class="alert alert-success" *ngIf="success">{{ success }}</div>
-        <div class="alert alert-error" *ngIf="error">{{ error }}</div>
-      </div>
+          <div class="form-group">
+            <label class="form-label" for="rpDescription">Description <span class="required">*</span></label>
+            <textarea id="rpDescription" [(ngModel)]="reportForm.description" name="rpDescription" rows="4"
+              placeholder="Describe the adverse event (min 10 characters)…"
+              [class.input-err]="reportFormErrors['description']"></textarea>
+            <span class="err-msg" *ngIf="reportFormErrors['description']">{{ reportFormErrors['description'] }}</span>
+          </div>
 
-      <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeEditModal()" [disabled]="submitting">Cancel</button>
-        <button class="btn-primary" (click)="saveEdit()" [disabled]="submitting">
-          <span *ngIf="submitting">Saving...</span>
-          <span *ngIf="!submitting">Save</span>
-        </button>
+          <div class="form-group">
+            <label class="form-label" for="rpSeverity">Severity <span class="required">*</span></label>
+            <select id="rpSeverity" class="form-select" [(ngModel)]="reportForm.severity" name="rpSeverity"
+              [class.input-err]="reportFormErrors['severity']">
+              <option value="">— Select Severity —</option>
+              <option value="Mild">Mild</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Severe">Severe</option>
+              <option value="Critical">Critical</option>
+            </select>
+            <span class="err-msg" *ngIf="reportFormErrors['severity']">{{ reportFormErrors['severity'] }}</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="rpDate">Reported Date <span class="required">*</span></label>
+            <input type="date" id="rpDate" [(ngModel)]="reportForm.reportedDate" name="rpDate"
+              [max]="today" [class.input-err]="reportFormErrors['reportedDate']" />
+            <span class="err-msg" *ngIf="reportFormErrors['reportedDate']">{{ reportFormErrors['reportedDate'] }}</span>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" (click)="closeReportModal()" [disabled]="reportSubmitting">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="reportSubmitting">
+              {{ reportSubmitting ? 'Submitting…' : 'Submit AE' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

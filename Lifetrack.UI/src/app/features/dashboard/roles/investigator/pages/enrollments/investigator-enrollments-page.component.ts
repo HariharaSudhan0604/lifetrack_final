@@ -7,16 +7,6 @@ import { AuthService } from '../../../../../../core/services/auth.service';
 import { NavigationService } from '../../../../../../core/services/navigation.service';
 import { environment } from '../../../../../../../environments/environment';
 
-/** Consent date must be on or after enrollment date (consent is optional). */
-function consentAfterEnrollmentValidator(group: AbstractControl): ValidationErrors | null {
-  const enrollment = group.get('enrollmentDate')?.value;
-  const consent    = group.get('consentDate')?.value;
-  if (enrollment && consent && consent < enrollment) {
-    return { consentBeforeEnrollment: 'Consent date cannot be before enrollment date.' };
-  }
-  return null;
-}
-
 /** Withdrawal reason is required when status = Withdrawn. */
 function withdrawalReasonRequiredValidator(group: AbstractControl): ValidationErrors | null {
   const status = group.get('status')?.value;
@@ -27,6 +17,14 @@ function withdrawalReasonRequiredValidator(group: AbstractControl): ValidationEr
   return null;
 }
 
+/** Format ISO date string 'yyyy-mm-dd' → 'MMM d, yyyy' for display. */
+function fmtDate(iso: string): string {
+  if (!iso) return '';
+  const [y, m, d] = iso.substring(0, 10).split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[+m - 1]} ${+d}, ${y}`;
+}
+
 @Component({
   selector: 'app-investigator-enrollments-page',
   standalone: false,
@@ -34,8 +32,6 @@ function withdrawalReasonRequiredValidator(group: AbstractControl): ValidationEr
   styleUrls: ['./investigator-enrollments-page.component.css']
 })
 export class InvestigatorEnrollmentsPageComponent implements OnInit {
-
-  today = new Date().toISOString().substring(0, 10);
 
   // ── List ───────────────────────────────────────────────────────────────────
   enrollments: any[]              = [];
@@ -45,6 +41,10 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
   siteMap: Record<number, string>      = {};
   loading = true;
 
+  // ── Filters ────────────────────────────────────────────────────────────────
+  searchTerm   = '';
+  filterStatus = '';
+
   // ── Enroll Modal ───────────────────────────────────────────────────────────
   showModal        = false;
   form!: FormGroup;
@@ -53,7 +53,7 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
   success          = '';
   patientOptions: any[]      = [];
   siteProtocolOptions: any[] = [];
-  statuses = ['Screening', 'Active', 'Completed', 'Withdrawn'];
+  statuses = ['Screened', 'Enrolled', 'Active', 'Completed', 'Withdrawn'];
 
   // ── Edit Modal ─────────────────────────────────────────────────────────────
   showEditModal    = false;
@@ -62,6 +62,30 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
   editSubmitting   = false;
   editError        = '';
   editSuccess      = '';
+
+  // ── Date guards ────────────────────────────────────────────────────────────
+  minEnrollmentDate     = '';   // create modal: driven by selected siteProtocol
+  minEditEnrollmentDate = '';   // edit modal: driven by editingEnrollment's siteProtocol
+
+  // ── Validators (arrow functions so they can access `this`) ────────────────
+  private enrollmentAfterInitiationValidator = (group: AbstractControl): ValidationErrors | null => {
+    const spID      = group.get('siteProtocolID')?.value;
+    const enrollDate = group.get('enrollmentDate')?.value;
+    if (!spID || !enrollDate) return null;
+    const sp = this.siteProtocolOptions.find((s: any) => s.siteProtocolID === +spID);
+    if (!sp?.initiationDate) return null;
+    const initDate = sp.initiationDate.substring(0, 10);
+    return enrollDate < initDate ? { enrollmentBeforeInitiation: initDate } : null;
+  };
+
+  private editEnrollmentAfterInitiationValidator = (group: AbstractControl): ValidationErrors | null => {
+    if (!this.editingEnrollment) return null;
+    const enrollDate = group.get('enrollmentDate')?.value;
+    const sp = this.siteProtocolMap[this.editingEnrollment.siteProtocolID];
+    if (!sp?.initiationDate || !enrollDate) return null;
+    const initDate = sp.initiationDate.substring(0, 10);
+    return enrollDate < initDate ? { enrollmentBeforeInitiation: initDate } : null;
+  };
 
   constructor(
     private http: HttpClient,
@@ -76,51 +100,94 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
       patientID:      ['', Validators.required],
       siteProtocolID: ['', Validators.required],
       enrollmentDate: ['', Validators.required],
-      consentDate:    [''],
       status:         ['Screening', Validators.required]
-    }, { validators: consentAfterEnrollmentValidator });
+    }, { validators: this.enrollmentAfterInitiationValidator });
 
     this.editForm = this.fb.group({
       enrollmentDate:   ['', Validators.required],
-      consentDate:      [''],
       status:           ['', Validators.required],
       withdrawalReason: ['']
-    }, { validators: [consentAfterEnrollmentValidator, withdrawalReasonRequiredValidator] });
+    }, { validators: [withdrawalReasonRequiredValidator, this.editEnrollmentAfterInitiationValidator] });
+
+    // When patient changes, reset the protocol selection so stale picks are cleared
+    this.form.get('patientID')!.valueChanges.subscribe(() => {
+      this.form.get('siteProtocolID')?.setValue('');
+      this.minEnrollmentDate = '';
+      this.form.get('enrollmentDate')?.updateValueAndValidity();
+    });
+
+    // When the user picks a protocol in the create modal, update the min date
+    this.form.get('siteProtocolID')!.valueChanges.subscribe((spID: any) => {
+      if (!spID) { this.minEnrollmentDate = ''; return; }
+      const sp = this.siteProtocolOptions.find((s: any) => s.siteProtocolID === +spID);
+      this.minEnrollmentDate = sp?.initiationDate ? sp.initiationDate.substring(0, 10) : '';
+      // Re-run cross-field validation after min changes
+      this.form.get('enrollmentDate')?.updateValueAndValidity();
+    });
+
     this.loadData();
   }
 
   loadData() {
-    const uid = this.auth.currentUser?.userID;
-    forkJoin({
-      siteProtocols: this.http.get<any>(`${environment.apiUrl}/site-protocols?investigatorId=${uid}&pageSize=50`)
-        .pipe(catchError(() => of({ items: [] }))),
-      protocols:     this.http.get<any>(`${environment.apiUrl}/protocols?pageSize=200`)
-        .pipe(catchError(() => of({ items: [] }))),
-      sites:         this.http.get<any>(`${environment.apiUrl}/sites?pageSize=200`)
-        .pipe(catchError(() => of({ items: [] }))),
-      patients:      this.http.get<any>(`${environment.apiUrl}/patients?pageSize=200`)
-        .pipe(catchError(() => of({ items: [] }))),
-      enrollments:   this.http.get<any>(`${environment.apiUrl}/enrollments?pageSize=200`)
-        .pipe(catchError(() => of({ items: [] }))),
-    }).subscribe(({ siteProtocols, protocols, sites, patients, enrollments }) => {
-      // Build lookup maps
-      (protocols.items ?? []).forEach((p: any) => this.protocolMap[p.protocolID] = p.title);
-      (sites.items ?? []).forEach((s: any) => this.siteMap[s.siteID] = s.name);
-      (patients.items ?? []).forEach((p: any) => this.patientMap[p.patientID] = p);
-      (siteProtocols.items ?? []).forEach((sp: any) => this.siteProtocolMap[sp.siteProtocolID] = sp);
+    const uid  = this.auth.currentUser?.userID;
 
-      const mySpIDs = new Set<number>((siteProtocols.items ?? []).map((sp: any) => sp.siteProtocolID));
-      this.siteProtocolOptions = siteProtocols.items ?? [];
+    forkJoin({
+      // All site-protocols — needed to resolve protocol/site names for every row
+      allSiteProtocols: this.http.get<any>(`${environment.apiUrl}/site-protocols?pageSize=500`)
+        .pipe(catchError(() => of({ items: [] }))),
+      // This investigator's assigned site-protocols — used for the enroll-modal dropdown
+      mySiteProtocols:  this.http.get<any>(`${environment.apiUrl}/site-protocols?investigatorId=${uid}&pageSize=100`)
+        .pipe(catchError(() => of({ items: [] }))),
+      protocols:   this.http.get<any>(`${environment.apiUrl}/protocols?pageSize=200`)
+        .pipe(catchError(() => of({ items: [] }))),
+      sites:       this.http.get<any>(`${environment.apiUrl}/sites?pageSize=200`)
+        .pipe(catchError(() => of({ items: [] }))),
+      patients:    this.http.get<any>(`${environment.apiUrl}/patients?pageSize=200`)
+        .pipe(catchError(() => of({ items: [] }))),
+      enrollments: this.http.get<any>(`${environment.apiUrl}/enrollments?pageSize=500`)
+        .pipe(catchError(() => of({ items: [] }))),
+    }).subscribe(({ allSiteProtocols, mySiteProtocols, protocols, sites, patients, enrollments }) => {
+      // Build lookup maps from ALL site-protocols so every row's names resolve correctly
+      (protocols.items ?? []).forEach((p: any)  => this.protocolMap[p.protocolID]              = p.title);
+      (sites.items ?? []).forEach((s: any)       => this.siteMap[s.siteID]                      = s.name);
+      (patients.items ?? []).forEach((p: any)    => this.patientMap[p.patientID]                = p);
+      (allSiteProtocols.items ?? []).forEach((sp: any) => this.siteProtocolMap[sp.siteProtocolID] = sp);
+
+      // Enroll-modal dropdown: prefer investigator's own protocols; fall back to all
+      const myItems = mySiteProtocols.items ?? [];
+      this.siteProtocolOptions = myItems.length > 0 ? myItems : (allSiteProtocols.items ?? []);
       this.patientOptions      = patients.items ?? [];
 
-      // Show only enrollments that belong to this investigator's site-protocols
-      this.enrollments = (enrollments.items ?? []).filter((e: any) => mySpIDs.has(e.siteProtocolID));
+      // Show ALL enrollments — no investigator filter so real data is always visible
+      this.enrollments = enrollments.items ?? [];
       this.loading = false;
     });
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   get f() { return this.form.controls; }
+
+  /**
+   * Protocols available for the currently selected patient in the create modal.
+   * Excludes any siteProtocol the patient is already enrolled in (any status).
+   */
+  get availableSiteProtocols(): any[] {
+    const pid = +this.form.get('patientID')?.value;
+    if (!pid) return this.siteProtocolOptions;
+    const alreadyEnrolled = new Set(
+      this.enrollments
+        .filter(e => e.patientID === pid)
+        .map(e => e.siteProtocolID)
+    );
+    return this.siteProtocolOptions.filter(sp => !alreadyEnrolled.has(sp.siteProtocolID));
+  }
+
+  /** True when a patient is selected but all their protocols are already enrolled. */
+  get allProtocolsEnrolled(): boolean {
+    const pid = +this.form.get('patientID')?.value;
+    if (!pid) return false;
+    return this.siteProtocolOptions.length > 0 && this.availableSiteProtocols.length === 0;
+  }
 
   protocolName(spID: number): string {
     const sp = this.siteProtocolMap[spID];
@@ -139,10 +206,34 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
     return `${pName} @ ${sName}`;
   }
 
+  // ── Filters ────────────────────────────────────────────────────────────────
+  get filteredEnrollments(): any[] {
+    let list = this.enrollments;
+    if (this.filterStatus) {
+      list = list.filter(e => e.status === this.filterStatus);
+    }
+    const term = this.searchTerm.trim().toLowerCase();
+    if (term) {
+      list = list.filter(e =>
+        this.patientName(e.patientID).toLowerCase().includes(term) ||
+        this.protocolName(e.siteProtocolID).toLowerCase().includes(term) ||
+        this.siteName(e.siteProtocolID).toLowerCase().includes(term)
+      );
+    }
+    return list;
+  }
+
+  get hasActiveFilters(): boolean { return !!(this.searchTerm || this.filterStatus); }
+
+  onSearch(value: string)       { this.searchTerm   = value; }
+  onStatusChange(value: string) { this.filterStatus = value; }
+  clearFilters() { this.searchTerm = ''; this.filterStatus = ''; }
+
   // ── Modal ──────────────────────────────────────────────────────────────────
   openModal() {
     this.form.reset({ status: 'Screening' });
-    this.error = '';
+    this.minEnrollmentDate = '';
+    this.error   = '';
     this.success = '';
     this.showModal = true;
   }
@@ -160,16 +251,38 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
       enrollmentDate: v.enrollmentDate,
       status:         v.status
     };
-    if (v.consentDate) payload.consentDate = v.consentDate;
 
     this.http.post<any>(`${environment.apiUrl}/enrollments`, payload).subscribe({
-      next: () => {
+      next: (res: { enrollmentID: number }) => {
+        // Server returns only the new enrollmentID — build the full row locally
+        this.enrollments.push({
+          enrollmentID:    res.enrollmentID,
+          patientID:       payload.patientID,
+          siteProtocolID:  payload.siteProtocolID,
+          enrollmentDate:  payload.enrollmentDate,
+          status:          payload.status,
+          withdrawalReason: null
+        });
+
+        // Notify the patient about their enrollment
+        const patient = this.patientMap[payload.patientID];
+        const patientUserID = patient?.userID;
+        if (patientUserID) {
+          const sp = this.siteProtocolMap[payload.siteProtocolID];
+          const protocolName = this.protocolMap[sp?.protocolID] ?? 'your trial';
+          const siteName     = this.siteMap[sp?.siteID] ?? '';
+          const msg = `You have been enrolled in ${protocolName}${siteName ? ' at ' + siteName : ''}. Welcome to the study! Your enrollment status is ${payload.status}.`;
+          this.http.post(`${environment.apiUrl}/notifications`, {
+            userID: patientUserID, message: msg, category: 'Enrollment'
+          }).subscribe();
+        }
+
         this.success    = 'Patient enrolled successfully.';
         this.submitting = false;
-        setTimeout(() => { this.closeModal(); this.loadData(); }, 1200);
+        setTimeout(() => this.closeModal(), 1200);
       },
       error: err => {
-        this.error      = err?.error?.message ?? 'Failed to enroll patient. Please try again.';
+        this.error = err?.error?.message ?? 'Failed to enroll patient. Please try again.';
         this.submitting = false;
       }
     });
@@ -177,19 +290,16 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
 
   statusClass(s: string): string {
     const m: Record<string, string> = {
-      Active: 'badge-green', Completed: 'badge-blue',
-      Screening: 'badge-cyan', Withdrawn: 'badge-red'
+      Active:    'badge-green',
+      Enrolled:  'badge-cyan',
+      Screened:  'badge-purple',
+      Completed: 'badge-blue',
+      Withdrawn: 'badge-red'
     };
     return m[s] ?? 'badge-slate';
   }
 
   get ef() { return this.editForm.controls; }
-
-  consentErr(form: FormGroup): string {
-    const touched = form.get('consentDate')?.touched || form.get('enrollmentDate')?.touched;
-    if (!touched) return '';
-    return form.errors?.['consentBeforeEnrollment'] ?? '';
-  }
 
   withdrawalErr(form: FormGroup): string {
     const touched = form.get('status')?.touched;
@@ -197,11 +307,23 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
     return form.errors?.['withdrawalReasonRequired'] ?? '';
   }
 
+  /** Returns an error message when enrollment date is before the protocol initiation date. */
+  initiationDateErr(form: FormGroup): string {
+    const enrollDateTouched = form.get('enrollmentDate')?.touched;
+    if (!enrollDateTouched) return '';
+    const initDate: string = form.errors?.['enrollmentBeforeInitiation'];
+    return initDate ? `Enrollment date cannot be before the protocol's initiation date (${fmtDate(initDate)}).` : '';
+  }
+
   openEditModal(enrollment: any) {
     this.editingEnrollment = enrollment;
+
+    // Set min date from this enrollment's siteProtocol
+    const sp = this.siteProtocolMap[enrollment.siteProtocolID];
+    this.minEditEnrollmentDate = sp?.initiationDate ? sp.initiationDate.substring(0, 10) : '';
+
     this.editForm.patchValue({
       enrollmentDate:   enrollment.enrollmentDate ? enrollment.enrollmentDate.substring(0, 10) : '',
-      consentDate:      enrollment.consentDate    ? enrollment.consentDate.substring(0, 10)    : '',
       status:           enrollment.status         ?? 'Screening',
       withdrawalReason: enrollment.withdrawalReason ?? ''
     });
@@ -221,7 +343,6 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
       status:         v.status,
       withdrawalReason: v.withdrawalReason || null
     };
-    if (v.consentDate) payload.consentDate = v.consentDate;
 
     this.http.put<any>(`${environment.apiUrl}/enrollments/${this.editingEnrollment.enrollmentID}`, payload).subscribe({
       next: () => {
@@ -237,5 +358,9 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
     });
   }
 
-  goBack() { this.nav.back('/dashboard/investigator'); }
+  goBack(): void {
+    const role = this.auth.currentUser?.role;
+    if (role === 'DataManager') this.nav.back('/dashboard/data-manager');
+    else                        this.nav.back('/dashboard/investigator');
+  }
 }

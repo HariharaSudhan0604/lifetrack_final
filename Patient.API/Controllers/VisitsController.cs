@@ -34,17 +34,28 @@ public class VisitsController : ControllerBase
 
     [HttpPost]
     [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.Investigator)]
-    public async Task<ActionResult<VisitResponse>> Create([FromBody] CreateVisitRequest req)
+    public async Task<ActionResult> Create([FromBody] CreateVisitRequest req)
     {
-        try { var created = await _visits.CreateAsync(req); return CreatedAtAction(nameof(Get), new { id = created.VisitID }, created); }
+        try
+        {
+            var created = await _visits.CreateAsync(req);
+            // Return only the new ID — client already holds all other field values
+            return StatusCode(201, new { visitID = created.VisitID });
+        }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
     [HttpPut("{id:long}")]
     [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager, RolesEnum.Investigator)]
-    public async Task<ActionResult<VisitResponse>> Update(long id, [FromBody] UpdateVisitRequest req)
+    public async Task<ActionResult> Update(long id, [FromBody] UpdateVisitRequest req)
     {
-        try { var updated = await _visits.UpdateAsync(id, req); return updated is null ? NotFound() : Ok(updated); }
+        try
+        {
+            var updated = await _visits.UpdateAsync(id, req);
+            if (updated is null) return NotFound();
+            // Client already holds the updated values — no need to echo them back
+            return NoContent();
+        }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
 }

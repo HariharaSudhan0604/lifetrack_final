@@ -4,6 +4,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { NavigationService } from '../../../../../../core/services/navigation.service';
+import { AuthService } from '../../../../../../core/services/auth.service';
 import { environment } from '../../../../../../../environments/environment';
 
 interface AuditEntry {
@@ -52,9 +53,10 @@ export class AdminAuditLogsPageComponent implements OnInit {
   loginSearch = '';
 
   constructor(
-    private http: HttpClient,
-    private router: Router,
-    private nav: NavigationService
+    private http:    HttpClient,
+    private router:  Router,
+    private nav:     NavigationService,
+    private authSvc: AuthService
   ) {}
 
   ngOnInit(): void { this.loadData(); }
@@ -89,17 +91,22 @@ export class AdminAuditLogsPageComponent implements OnInit {
           );
           return of({ items: [] });
         })),
-      users: this.http
-        .get<any>(`${environment.apiUrl}/users?pageSize=200`)
+      // Server caps pageSize at 100 — fetch both pages to cover up to 200 users
+      usersP1: this.http
+        .get<any>(`${environment.apiUrl}/users?page=1&pageSize=100`)
+        .pipe(catchError(() => of({ items: [] }))),
+      usersP2: this.http
+        .get<any>(`${environment.apiUrl}/users?page=2&pageSize=100`)
         .pipe(catchError(() => of({ items: [] })))
     }).subscribe({
-      next: ({ governance, clinical, logins, users }) => {
+      next: ({ governance, clinical, logins, usersP1, usersP2 }) => {
 
-        /* Build user map first so loginLogs can use it */
-        (users?.items ?? []).forEach((u: any) => {
-          const id   = u.userID ?? u.id;
-          const name = u.name ?? (`${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || 'Unknown');
-          this.userMap[id] = name;
+        /* Build user map from both pages */
+        const allUsers = [...(usersP1?.items ?? []), ...(usersP2?.items ?? [])];
+        allUsers.forEach((u: any) => {
+          const id   = u.userID ?? u.UserID ?? u.id;
+          const name = u.name   ?? u.Name   ?? u.email ?? 'Unknown';
+          if (id != null) this.userMap[id] = name;
         });
 
         /* Audit Entries — merge both DBs, sort newest-first */
@@ -121,6 +128,30 @@ export class AdminAuditLogsPageComponent implements OnInit {
           action:     l.action,
           actionTime: l.actionTime
         }));
+
+        /* Resolve any user IDs still missing from the map (individual lookups) */
+        const missingIds = [
+          ...new Set(
+            this.entries
+              .map(e => e.changedByUserID)
+              .filter((id): id is number => id != null && !this.userMap[id])
+          )
+        ];
+        if (missingIds.length > 0) {
+          forkJoin(
+            missingIds.map(id =>
+              this.http.get<any>(`${environment.apiUrl}/users/${id}`)
+                .pipe(catchError(() => of(null)))
+            )
+          ).subscribe(results => {
+            results.forEach((u, i) => {
+              if (u) {
+                const name = u.name ?? u.Name ?? u.email ?? 'Unknown';
+                this.userMap[missingIds[i]] = name;
+              }
+            });
+          });
+        }
 
         this.loading = false;
       },
@@ -163,14 +194,22 @@ export class AdminAuditLogsPageComponent implements OnInit {
   get totalClinical(): number {
     return this.entries.filter(e => e.source === 'Clinical DB').length;
   }
+  /** Returns today's date string in IST (UTC+5:30) for "today" comparisons. */
+  private todayIST(): string {
+    return new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  }
+  private toISTDateStr(iso: string): string {
+    return new Date(new Date(iso).getTime() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  }
+
   get todayCount(): number {
-    const today = new Date().toDateString();
-    return this.entries.filter(e => new Date(e.changedAt).toDateString() === today).length;
+    const today = this.todayIST();
+    return this.entries.filter(e => this.toISTDateStr(e.changedAt) === today).length;
   }
   get todayLogins(): number {
-    const today = new Date().toDateString();
+    const today = this.todayIST();
     return this.loginLogs.filter(l =>
-      new Date(l.actionTime).toDateString() === today && l.action.toLowerCase().includes('login')
+      this.toISTDateStr(l.actionTime) === today && l.action.toLowerCase().includes('login')
     ).length;
   }
 
@@ -206,5 +245,9 @@ export class AdminAuditLogsPageComponent implements OnInit {
   setAction(a: string): void { this.selectedAction = a; }
   setTab(t: 'entries' | 'logins'): void { this.activeTab = t; }
 
-  goBack(): void { this.nav.back('/dashboard/admin'); }
+  goBack(): void {
+    const role = this.authSvc.currentUser?.role;
+    if (role === 'RegulatoryOfficer') this.nav.back('/dashboard/regulatory');
+    else                              this.nav.back('/dashboard/admin');
+  }
 }

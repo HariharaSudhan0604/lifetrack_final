@@ -51,16 +51,16 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("register")]
     [RoleAuthorize(RolesEnum.Admin)]
-    public async Task<ActionResult<UserResponse>> Register([FromBody] RegisterRequest req)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest req)
     {
         if (req.RoleID == (int)RolesEnum.Patient)
             return BadRequest(new { error = "Patients must self-register via /api/auth/register/patient." });
 
         try
         {
-            var user = await _auth.RegisterAsync(req);
+            await _auth.RegisterAsync(req);
             _users.InvalidateListCache();
-            return StatusCode(StatusCodes.Status201Created, user);
+            return StatusCode(StatusCodes.Status201Created);
         }
         catch (AuthException ex) { return Conflict(new { error = ex.Message }); }
     }

@@ -11,6 +11,7 @@ public class SiteProtocol
     /// <summary>UserID from Authentication.API — cross-service reference, no EF nav property.</summary>
     public long? InvestigatorID { get; set; }
     public DateTime? InitiationDate { get; set; }
+    [Required, MaxLength(50)] public string Phase { get; set; } = "Preclinical";
     [Required, MaxLength(50)] public string Status { get; set; } = "Pending";
 
     [ForeignKey(nameof(SiteID))] public Site? Site { get; set; }

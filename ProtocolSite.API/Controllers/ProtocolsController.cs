@@ -15,12 +15,12 @@ public class ProtocolsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<PagedResult<ProtocolResponse>>> List(
-        [FromQuery] string? status, [FromQuery] string? phase,
+        [FromQuery] string? status,
         [FromQuery] string? search,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         if (page < 1) page = 1; if (pageSize is <= 0 or > 200) pageSize = 20;
-        return Ok(await _protocols.ListAsync(status, phase, search, page, pageSize));
+        return Ok(await _protocols.ListAsync(status, search, page, pageSize));
     }
 
     [HttpGet("{id:long}")]
@@ -29,9 +29,9 @@ public class ProtocolsController : ControllerBase
 
     [HttpPost]
     [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager)]
-    public async Task<ActionResult<ProtocolResponse>> Create([FromBody] CreateProtocolRequest req)
+    public async Task<IActionResult> Create([FromBody] CreateProtocolRequest req)
     {
-        try { var c = await _protocols.CreateAsync(req); return CreatedAtAction(nameof(Get), new { id = c.ProtocolID }, c); }
+        try { await _protocols.CreateAsync(req); return NoContent(); }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
 

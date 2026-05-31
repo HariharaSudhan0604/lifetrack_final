@@ -35,12 +35,12 @@ public class AuthService : IAuthService
         var roleName = loaded.RoleNavigation?.RoleName ?? GetRoleName(loaded.RoleID);
         return new UserResponse
         {
-            UserID = loaded.UserID,
-            Name = loaded.Name,
-            Email = loaded.Email,
-            RoleID = loaded.RoleID,
-            Role = roleName,
-            Phone = loaded.Phone,
+            UserID   = loaded.UserID,
+            Name     = loaded.Name,
+            Email    = loaded.Email,
+            RoleID   = loaded.RoleID,
+            Role     = roleName,
+            Phone    = loaded.Phone,
             IsActive = loaded.IsActive
         };
     }
@@ -72,17 +72,14 @@ public class AuthService : IAuthService
         var roleName = user.RoleNavigation?.RoleName ?? GetRoleName(user.RoleID);
         return new AuthResponse
         {
-            Token = token,
+            Token        = token,
             ExpiresAtUtc = expiresAt,
-            User = new UserResponse
+            User         = new SessionUser
             {
                 UserID = user.UserID,
-                Name = user.Name,
-                Email = user.Email,
-                RoleID = user.RoleID,
-                Role = roleName,
-                Phone = user.Phone,
-                IsActive = user.IsActive
+                Name   = user.Name,
+                Email  = user.Email,
+                Role   = roleName
             }
         };
     }

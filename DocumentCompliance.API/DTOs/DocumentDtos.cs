@@ -1,31 +1,33 @@
 using System.ComponentModel.DataAnnotations;
 namespace DocumentCompliance.API.DTOs;
 
-// ── Document Requests ───────────────────────────────────────────────────────
-
 public record CreateDocumentRequest(
-    [Required] long ProtocolID,
-    [Required, MaxLength(100)] string Type,
-    [Required, MaxLength(20)] string Version,
-    [Required] long UploadedBy
+    [Required, MaxLength(300)] string Title,
+    [Required, MaxLength(100)] string Category,
+    long?   ProtocolID,
+    [MaxLength(20)]  string Version   = "1.0",
+    [MaxLength(1000)] string? Notes   = null,
+    long    UploadedBy = 0
 );
 
 public record UpdateDocumentRequest(
-    [Required] long ProtocolID,
-    [Required, MaxLength(100)] string Type,
-    [Required, MaxLength(20)] string Version,
-    [Required, MaxLength(50)] string Status,
-    [Required] long UploadedBy
+    [Required, MaxLength(300)] string Title,
+    [Required, MaxLength(100)] string Category,
+    long?   ProtocolID,
+    [Required, MaxLength(20)]  string Version,
+    [Required, MaxLength(50)]  string Status,
+    [MaxLength(1000)] string? Notes,
+    long    UploadedBy = 0
 );
 
-// ── Response DTOs ───────────────────────────────────────────────────────────
-
 public record DocumentResponse(
-    long DocumentID,
-    long ProtocolID,
-    string Type,
-    string Version,
-    long UploadedBy,
+    long     DocumentID,
+    string   Title,
+    string   Category,
+    long?    ProtocolID,
+    string   Version,
+    long     UploadedBy,
     DateTime UploadedAt,
-    string Status
+    string   Status,
+    string?  Notes
 );

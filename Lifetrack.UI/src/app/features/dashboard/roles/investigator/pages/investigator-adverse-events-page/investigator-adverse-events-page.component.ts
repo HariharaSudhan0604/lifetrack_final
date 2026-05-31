@@ -58,8 +58,7 @@ export class InvestigatorAdverseEventsPageComponent implements OnInit {
   editSubmitting = false;
   editError = '';
   editSuccess = '';
-  editForm = { description: '', severity: '', status: '', reportedDate: '' };
-  editStatuses = ['Open', 'Under Review', 'Resolved'];
+  editForm = { description: '', severity: '', reportedDate: '' };
 
   constructor(
     private http: HttpClient,
@@ -231,7 +230,6 @@ export class InvestigatorAdverseEventsPageComponent implements OnInit {
     this.editForm = {
       description:  ae.description  ?? '',
       severity:     ae.severity     ?? '',
-      status:       ae.status       ?? 'Open',
       reportedDate: ae.reportedDate ? ae.reportedDate.substring(0, 10) : ''
     };
     this.editError   = '';
@@ -247,7 +245,6 @@ export class InvestigatorAdverseEventsPageComponent implements OnInit {
   validateEditForm(): boolean {
     this.editFormErrors = {};
     if (!this.editForm.severity) this.editFormErrors['severity'] = 'Severity is required.';
-    if (!this.editForm.status)   this.editFormErrors['status']   = 'Status is required.';
     if (!this.editForm.description || !this.editForm.description.trim()) {
       this.editFormErrors['description'] = 'Description is required.';
     } else if (this.editForm.description.trim().length < 10) {
@@ -272,7 +269,7 @@ export class InvestigatorAdverseEventsPageComponent implements OnInit {
     const payload = {
       description:  this.editForm.description,
       severity:     this.editForm.severity,
-      status:       this.editForm.status,
+      status:       this.editingAE.status,   // investigator cannot change status
       reportedDate: this.editForm.reportedDate
     };
 

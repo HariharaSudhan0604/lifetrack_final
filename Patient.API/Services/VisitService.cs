@@ -55,7 +55,8 @@ public class VisitService : IVisitService
         var visit = await _visits.GetByIdAsync(visitId);
         if (visit is null) return null;
         if (visit.Status == "Completed" && req.Status != "Completed") throw new DomainException("A completed visit cannot be reopened.");
-        visit.EnrollmentID = req.EnrollmentID; visit.VisitDate = req.VisitDate; visit.Status = req.Status; visit.Notes = req.Notes ?? string.Empty;
+        // EnrollmentID is intentionally preserved — it cannot be changed via an update
+        visit.VisitDate = req.VisitDate; visit.Status = req.Status; visit.Notes = req.Notes ?? string.Empty;
         await _visits.UpdateAsync(visit);
         Invalidate(ItemPrefix, visitId, VersionKey);
         return ToResponse(visit);

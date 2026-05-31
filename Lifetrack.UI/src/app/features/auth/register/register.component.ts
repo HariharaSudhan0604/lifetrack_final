@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
@@ -18,8 +18,11 @@ export class RegisterComponent {
   error     = '';
   showPass  = false;
   showPass2 = false;
-  /** ISO date string used as the [max] attribute on the DOB input (no future dates). */
-  readonly today = new Date().toISOString().split('T')[0];
+  /** ISO date string used as the [max] on the DOB input — prevents future-date picker selection. */
+  readonly today  = new Date().toISOString().split('T')[0];
+  /** 120 years ago — used as [min] to reject clearly impossible birth dates. */
+  readonly minDob = new Date(new Date().setFullYear(new Date().getFullYear() - 120))
+                      .toISOString().split('T')[0];
 
   constructor(
     private fb: FormBuilder,
@@ -33,10 +36,10 @@ export class RegisterComponent {
       {
         name:     ['', [Validators.required, Validators.minLength(2), Validators.maxLength(200)]],
         email:    ['', [Validators.required, Validators.email, Validators.maxLength(256)]],
-        dob:      ['', [Validators.required]],
+        dob:      ['', [Validators.required, this.dobValidator.bind(this)]],
         password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
         confirm:  ['', Validators.required],
-        phone:    ['', Validators.maxLength(32)],
+        phone:    ['', [Validators.maxLength(32), this.phoneValidator]],
       },
       { validators: this.passwordsMatch }
     );
@@ -51,8 +54,50 @@ export class RegisterComponent {
   get name()     { return this.form.get('name')!; }
   get email()    { return this.form.get('email')!; }
   get dob()      { return this.form.get('dob')!; }
+  get phone()    { return this.form.get('phone')!; }
   get password() { return this.form.get('password')!; }
   get confirm()  { return this.form.get('confirm')!; }
+
+  // ── Custom validators ──────────────────────────────────────────────────────
+
+  /**
+   * Date-of-birth rules:
+   *  • Not today or in the future
+   *  • Patient must be at least 18 years old (clinical trials require adult consent)
+   *  • Cannot be more than 120 years ago (catches clearly invalid input)
+   */
+  private dobValidator(control: AbstractControl): ValidationErrors | null {
+    const value = control.value;
+    if (!value) return null; // let required handle the empty case
+
+    const dob   = new Date(value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (dob >= today) return { dobFuture: true };
+
+    const age18Cutoff = new Date(today);
+    age18Cutoff.setFullYear(today.getFullYear() - 18);
+    if (dob > age18Cutoff) return { dobMinAge: true };
+
+    const age120Cutoff = new Date(today);
+    age120Cutoff.setFullYear(today.getFullYear() - 120);
+    if (dob < age120Cutoff) return { dobMaxAge: true };
+
+    return null;
+  }
+
+  /**
+   * Phone rules (field is optional — skip when blank):
+   *  • Indian mobile numbers only — exactly 10 digits, no prefix allowed
+   *  • Must start with 6, 7, 8, or 9 (valid Indian mobile series)
+   *  • Example: 9876543210
+   */
+  private phoneValidator(control: AbstractControl): ValidationErrors | null {
+    const value = control.value?.trim();
+    if (!value) return null; // optional field
+    return /^[6-9]\d{9}$/.test(value) ? null : { phonePattern: true };
+  }
 
   get confirmError(): string {
     if (!this.confirm.touched) return '';

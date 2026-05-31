@@ -28,7 +28,8 @@ export class CtmAssignmentsPageComponent implements OnInit {
   listPageSize   = 10;
   listTotalCount = 0;
   listTotalPages = 1;
-  filterStatus   = '';
+  searchTerm   = '';
+  filterStatus = '';
 
   readonly statuses = ['Pending', 'Active', 'Suspended', 'Completed'];
 
@@ -85,9 +86,31 @@ export class CtmAssignmentsPageComponent implements OnInit {
 
   goBack() { this.nav.back('/dashboard/ctm'); }
 
+  // search is client-side — just update the term, no API call needed
+  onSearch(value: string) { this.searchTerm = value; }
+
   onFilterChange() { this.loadAssignments(1); }
 
-  clearFilter() { this.filterStatus = ''; this.loadAssignments(1); }
+  clearFilters() {
+    this.searchTerm   = '';
+    this.filterStatus = '';
+    this.loadAssignments(1);
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!(this.searchTerm || this.filterStatus);
+  }
+
+  // filtered view (client-side search on top of the server-paged list)
+  get filteredList(): any[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) return this.assignmentList;
+    return this.assignmentList.filter(a =>
+      this.protocolName(a.protocolID).toLowerCase().includes(term) ||
+      this.siteName(a.siteID).toLowerCase().includes(term) ||
+      this.investigatorName(a.investigatorID).toLowerCase().includes(term)
+    );
+  }
 
   // ── List ───────────────────────────────────────────────────────────────────
   loadAssignments(page: number) {

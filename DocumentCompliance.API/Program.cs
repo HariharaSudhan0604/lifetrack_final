@@ -51,6 +51,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// ── HTTP context accessor (used by DocumentDbContext to stamp changedByUserID on audit rows) ──
+builder.Services.AddHttpContextAccessor();
+
 // ── Database ───────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<DocumentDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("GovernanceDb")));

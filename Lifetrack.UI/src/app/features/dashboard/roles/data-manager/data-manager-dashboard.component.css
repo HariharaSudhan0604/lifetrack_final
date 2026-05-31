@@ -1,3 +1,42 @@
+/* ── Adverse Events list ──────────────────────────────────────────────── */
+.ae-list { display: flex; flex-direction: column; }
+.ae-item {
+  padding: 5px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.ae-item:last-child { border-bottom: none; }
+.ae-row  { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 1px; }
+.ae-desc { font-size: 13px; font-weight: 500; color: #1e293b; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ae-badges { display: flex; gap: 5px; flex-shrink: 0; }
+.ae-date { font-size: 11px; color: #94a3b8; }
+
+/* ── Notification bell & dropdown ────────────────────────────────────── */
+.notif-bell-wrap { position: relative; }
+.notif-backdrop  { position: fixed; inset: 0; z-index: 99; }
+.hdr-btn-notif   { border-color: #bfdbfe; color: #1d4ed8; background: #eff6ff; }
+.hdr-btn-notif:hover { background: #dbeafe; border-color: #93c5fd; }
+.notif-dot-blue  { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #3b82f6; margin-left: 4px; vertical-align: middle; }
+.notif-dropdown  { position: absolute; top: calc(100% + 8px); right: 0; width: 360px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 12px 40px rgba(15,23,42,.18); z-index: 100; overflow: hidden; animation: dropFade .18s ease; }
+@keyframes dropFade { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+.notif-drop-hdr  { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; border-bottom:1px solid #f1f5f9; }
+.notif-drop-title { font-size:13px; font-weight:700; color:#0f172a; }
+.notif-count-badge { display:inline-block; padding:2px 8px; font-size:11px; font-weight:600; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; border-radius:20px; }
+.notif-drop-empty { display:flex; align-items:center; justify-content:center; gap:8px; padding:28px 16px; font-size:13px; color:#94a3b8; }
+.notif-drop-list  { max-height:380px; overflow-y:auto; }
+.notif-drop-item  { display:flex; align-items:flex-start; gap:10px; padding:12px 16px; border-bottom:1px solid #f8fafc; transition:background .12s; }
+.notif-drop-item:last-child { border-bottom:none; }
+.notif-drop-item:hover { background:#f8fafc; }
+.notif-drop-unread { background:#f0f7ff; }
+.notif-drop-unread:hover { background:#e6f0fd; }
+.notif-drop-icon  { width:30px; height:30px; border-radius:8px; background:#f1f5f9; color:#64748b; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.notif-drop-body  { flex:1; min-width:0; }
+.notif-drop-msg   { margin:0; font-size:12.5px; color:#1e293b; line-height:1.45; word-break:break-word; }
+.notif-drop-meta  { display:flex; align-items:center; gap:6px; margin:3px 0 0; font-size:11px; color:#94a3b8; }
+.notif-drop-cat   { background:#f1f5f9; color:#475569; padding:1px 6px; border-radius:4px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; }
+.notif-dot-sm     { width:7px; height:7px; border-radius:50%; background:#3b82f6; flex-shrink:0; margin-top:4px; }
+.notif-mark-read-btn { display:inline-flex; align-items:center; gap:4px; margin-top:6px; padding:3px 8px; font-size:11px; font-weight:500; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; border-radius:5px; cursor:pointer; transition:all .15s; line-height:1; }
+.notif-mark-read-btn:hover { background:#bae6fd; border-color:#7dd3fc; color:#0c4a6e; }
+
 /* ── Root ─────────────────────────────────────────────────────────────── */
 .dm-dash {
   padding: 24px;
@@ -107,27 +146,6 @@
 .proto-bar-fill.bar-warn { background: #EF9F27; }
 .proto-bar-fill.bar-bad  { background: #E24B4A; }
 
-/* ── Validation Issues ────────────────────────────────────────────────── */
-.vi-list { display: flex; flex-direction: column; gap: 10px; }
-.vi-item {
-  padding: 10px 12px;
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
-  background: #fafafa;
-}
-.vi-row {
-  display: flex; justify-content: space-between;
-  align-items: center; margin-bottom: 4px;
-}
-.vi-name { margin: 0; font-size: 13px; font-weight: 500; }
-.vi-detail { margin: 0; font-size: 11px; color: #9ca3af; }
-.vi-count {
-  font-size: 11px; padding: 2px 8px;
-  border-radius: 6px; font-weight: 600;
-}
-.vi-count-danger { background: #FCEBEB; color: #791F1F; }
-.vi-count-warn   { background: #FAEEDA; color: #633806; }
-.vi-count-slate  { background: #f3f4f6; color: #4b5563; }
 
 /* ── Table ────────────────────────────────────────────────────────────── */
 .dm-table {
@@ -165,9 +183,86 @@
   display: inline-block;
 }
 
+/* ── Queries count badge ──────────────────────────────────────────────── */
+.queries-count-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  background: #fef3c7; color: #92400e;
+  border-radius: 10px; font-size: 11px; font-weight: 600;
+}
+
+/* ── Query table cell styles ──────────────────────────────────────────── */
+.ref-cell {
+  font-weight: 500; color: #111827;
+  font-size: 13px; max-width: 160px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.query-cell {
+  font-size: 12px; color: #374151;
+  max-width: 280px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Investigator chip ────────────────────────────────────────────────── */
+.investigator-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: #475569;
+  background: #f1f5f9; border: 1px solid #e2e8f0;
+  border-radius: 5px; padding: 2px 7px;
+}
+.investigator-chip svg { opacity: 0.6; flex-shrink: 0; }
+
+/* ── Validation item clickable ────────────────────────────────────────── */
+.vi-item-clickable { cursor: pointer; transition: background .15s; }
+.vi-item-clickable:hover { background: #f3f4f6 !important; }
+
+/* ── Empty state inline ───────────────────────────────────────────────── */
+.empty-state-inline {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 4px; color: #6b7280; font-size: 13px;
+}
+
+/* ── Quick Actions Row (standalone bottom row, kept for responsive fallback) */
+.quick-actions-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* ── Quick Actions inside right panel — 2×2 grid ─────────────────────── */
+.qa-grid-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.qa-card {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; border: 1px solid #e5e7eb;
+  border-radius: 10px; padding: 14px 16px;
+  cursor: pointer; text-align: left;
+  transition: background .15s, border-color .15s;
+}
+.qa-card:hover { background: #f9fafb; border-color: #d1d5db; }
+.qa-icon {
+  width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.qa-icon-red   { background: #fef2f2; color: #dc2626; }
+.qa-icon-amber { background: #fffbeb; color: #d97706; }
+.qa-icon-blue  { background: #eff6ff; color: #2563eb; }
+.qa-icon-green { background: #f0fdf4; color: #16a34a; }
+.qa-body { flex: 1; min-width: 0; }
+.qa-title { margin: 0; font-size: 13px; font-weight: 600; color: #111827; }
+.qa-sub   { margin: 2px 0 0; font-size: 11px; color: #9ca3af; }
+
+/* ── Extra KPI helpers ────────────────────────────────────────────────── */
+.kpi-danger { color: #dc2626; }
+
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .dash-body { grid-template-columns: 1fr; }
-  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
-  .dm-dash   { padding: 16px; }
+  .dash-body          { grid-template-columns: 1fr; }
+  .kpi-strip          { grid-template-columns: repeat(2, 1fr); }
+  .quick-actions-row  { grid-template-columns: repeat(2, 1fr); }
+  .qa-grid-panel      { grid-template-columns: 1fr 1fr; } /* stays 2-col even on mobile */
+  .dm-dash            { padding: 16px; }
 }

@@ -12,7 +12,7 @@ using Patient.API.Data;
 namespace Patient.API.Migrations
 {
     [DbContext(typeof(PatientDbContext))]
-    [Migration("20260518092125_InitialCreate")]
+    [Migration("20260525100137_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -127,9 +127,16 @@ namespace Patient.API.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<long?>("UserID")
+                        .HasColumnType("bigint");
+
                     b.HasKey("PatientID");
 
                     b.HasIndex("EnrollmentStatus");
+
+                    b.HasIndex("UserID")
+                        .IsUnique()
+                        .HasFilter("[UserID] IS NOT NULL");
 
                     b.ToTable("Patients", (string)null);
                 });

@@ -28,13 +28,14 @@ public class AuditLogService : IAuditLogService
             Page = page,
             PageSize = pageSize,
             TotalCount = total,
+            // SQL Server returns DateTime with Kind=Unspecified; mark as UTC so JSON includes 'Z'
             Items = items.Select(l => new AuditLogResponse
             {
                 AuditID = l.AuditID,
                 UserID = l.UserID,
                 UserName = l.User?.Name,
                 Action = l.Action,
-                ActionTime = l.ActionTime
+                ActionTime = DateTime.SpecifyKind(l.ActionTime, DateTimeKind.Utc)
             }).ToList()
         };
     }

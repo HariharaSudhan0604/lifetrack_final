@@ -1,18 +1,34 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Patient.API.Models;
 namespace Patient.API.Data;
 
 public class PatientDbContext : DbContext
 {
-    public PatientDbContext(DbContextOptions<PatientDbContext> options) : base(options) { }
+    private readonly IHttpContextAccessor? _httpCtx;
+
+    public PatientDbContext(DbContextOptions<PatientDbContext> options,
+                            IHttpContextAccessor? httpCtx = null)
+        : base(options)
+    {
+        _httpCtx = httpCtx;
+    }
 
     public DbSet<PatientRecord> Patients => Set<PatientRecord>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<Visit> Visits => Set<Visit>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
-    /// <summary>Set this before SaveChangesAsync to stamp the current user on audit rows.</summary>
-    public long? CurrentUserID { get; set; }
+    /// <summary>Resolves the acting user ID from the JWT claim, or null for system operations.</summary>
+    private long? CurrentUserID
+    {
+        get
+        {
+            var raw = _httpCtx?.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            return long.TryParse(raw, out var id) ? id : null;
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

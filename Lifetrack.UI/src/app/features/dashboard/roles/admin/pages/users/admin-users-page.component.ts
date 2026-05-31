@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NavigationService } from '../../../../../../core/services/navigation.service';
 import { AuthService } from '../../../../../../core/services/auth.service';
@@ -54,6 +54,16 @@ export class AdminUsersPageComponent implements OnInit, OnDestroy {
     { id: 6, label: 'Data Manager' },
   ];
 
+  /** Maps roleID → backend role string (must match what the API stores). */
+  private readonly roleNameById: Record<number, string> = {
+    1: 'Admin',
+    2: 'ClinicalTrialManager',
+    3: 'Investigator',
+    4: 'Patient',
+    5: 'RegulatoryOfficer',
+    6: 'DataManager',
+  };
+
   private currentUserId: number | null = null;
 
   constructor(
@@ -71,13 +81,13 @@ export class AdminUsersPageComponent implements OnInit, OnDestroy {
       name:     ['', [Validators.required, Validators.minLength(2), Validators.maxLength(200)]],
       email:    ['', [Validators.required, Validators.email, Validators.maxLength(256)]],
       password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
-      phone:    ['', Validators.maxLength(32)],
+      phone:    ['', [Validators.maxLength(32), this.phoneValidator]],
       roleID:   [null, Validators.required],
     });
 
     this.editForm = this.fb.group({
       name:   ['', [Validators.required, Validators.minLength(2), Validators.maxLength(200)]],
-      phone:  ['', Validators.maxLength(32)],
+      phone:  ['', [Validators.maxLength(32), this.phoneValidator]],
       roleID: [null, Validators.required],
     });
 
@@ -192,12 +202,21 @@ export class AdminUsersPageComponent implements OnInit, OnDestroy {
     const body: any = { name: v.name.trim(), roleID: Number(v.roleID) };
     if (v.phone?.trim()) body.phone = v.phone.trim();
 
-    this.http.put<any>(`${environment.apiUrl}/users/${this.editingUser.userID}`, body).subscribe({
-      next: updated => {
+    this.http.put(`${environment.apiUrl}/users/${this.editingUser.userID}`, body).subscribe({
+      next: () => {
         this.editSubmitting = false;
         this.editSuccess    = true;
         const idx = this.userList.findIndex(u => u.userID === this.editingUser.userID);
-        if (idx > -1) this.userList[idx] = updated;
+        if (idx > -1) {
+          const roleID = Number(v.roleID);
+          this.userList[idx] = {
+            ...this.userList[idx],
+            name:   v.name.trim(),
+            phone:  v.phone?.trim() || null,
+            roleID,
+            role:   this.roleNameById[roleID] ?? this.userList[idx].role,
+          };
+        }
         setTimeout(() => {
           this.showEditModal = false;
           this.editSuccess   = false;
@@ -290,6 +309,16 @@ export class AdminUsersPageComponent implements OnInit, OnDestroy {
 
   cf(n: string) { return this.createForm.get(n)!; }
   ef(n: string) { return this.editForm.get(n)!; }
+
+  /**
+   * Indian mobile number — exactly 10 digits, must start with 6–9, no prefix.
+   * Skipped entirely when the field is blank (phone is optional).
+   */
+  private phoneValidator(control: AbstractControl): ValidationErrors | null {
+    const value = control.value?.trim();
+    if (!value) return null;
+    return /^[6-9]\d{9}$/.test(value) ? null : { phonePattern: true };
+  }
 
   fieldErr(ctrl: any): string {
     if (!ctrl.touched || ctrl.valid) return '';

@@ -28,8 +28,8 @@ public class SitesController : ControllerBase
 
     [HttpPost]
     [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager)]
-    public async Task<ActionResult<SiteResponse>> Create([FromBody] CreateSiteRequest req)
-    { var c = await _sites.CreateAsync(req); return CreatedAtAction(nameof(Get), new { id = c.SiteID }, c); }
+    public async Task<IActionResult> Create([FromBody] CreateSiteRequest req)
+    { await _sites.CreateAsync(req); return NoContent(); }
 
     [HttpPut("{id:long}")]
     [RoleAuthorize(RolesEnum.Admin, RolesEnum.ClinicalTrialManager)]

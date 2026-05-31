@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -16,6 +17,7 @@ namespace Patient.API.Migrations
                 {
                     PatientID = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    UserID = table.Column<long>(type: "bigint", nullable: true),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DOB = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ContactInfo = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
@@ -91,6 +93,13 @@ namespace Patient.API.Migrations
                 name: "IX_Patients_EnrollmentStatus",
                 table: "Patients",
                 column: "EnrollmentStatus");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Patients_UserID",
+                table: "Patients",
+                column: "UserID",
+                unique: true,
+                filter: "[UserID] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Visits_EnrollmentID",

@@ -15,12 +15,12 @@ public class DocumentRepository : IDocumentRepository
         => _db.Documents.FirstOrDefaultAsync(d => d.DocumentID == documentId);
 
     public async Task<(IReadOnlyList<Document> Items, int TotalCount)> ListAsync(
-        long? protocolId, string? status, string? type, int page, int pageSize)
+        long? protocolId, string? status, string? category, int page, int pageSize)
     {
         var q = _db.Documents.AsQueryable();
-        if (protocolId.HasValue) q = q.Where(d => d.ProtocolID == protocolId.Value);
-        if (!string.IsNullOrEmpty(status)) q = q.Where(d => d.Status == status);
-        if (!string.IsNullOrEmpty(type)) q = q.Where(d => d.Type == type);
+        if (protocolId.HasValue)          q = q.Where(d => d.ProtocolID == protocolId.Value);
+        if (!string.IsNullOrEmpty(status))   q = q.Where(d => d.Status   == status);
+        if (!string.IsNullOrEmpty(category)) q = q.Where(d => d.Category == category);
         q = q.OrderByDescending(d => d.UploadedAt);
         var total = await q.CountAsync();
         var items = await q.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();

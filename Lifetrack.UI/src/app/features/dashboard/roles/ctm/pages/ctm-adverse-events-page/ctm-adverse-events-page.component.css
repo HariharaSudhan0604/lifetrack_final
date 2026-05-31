@@ -3,6 +3,134 @@
    Clean modern layout. No heavy gradient header.
    ══════════════════════════════════════════════════════════════════════ */
 
+/* ── Review button ───────────────────────────────────────────────────────── */
+.btn-review {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn-review:hover { background: #dbeafe; border-color: #93c5fd; }
+.btn-view { color: #374151; background: #f9fafb; border-color: #d1d5db; }
+.btn-view:hover { background: #f3f4f6; border-color: #9ca3af; }
+
+/* ── Review modal ────────────────────────────────────────────────────────── */
+.review-box {
+  background: var(--card-bg, #fff);
+  border-radius: 14px;
+  width: 520px;
+  max-width: 95vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+}
+.review-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.review-title { font-size: 17px; font-weight: 700; color: #111827; margin: 0; }
+.review-sub   { font-size: 12px; color: #9ca3af; margin: 3px 0 0; }
+.review-body  { padding: 20px 24px 24px; }
+
+.info-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.info-row  { display: flex; align-items: center; gap: 12px; }
+.info-label { font-size: 12px; font-weight: 600; color: #6b7280; width: 110px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.04em; }
+.info-value { font-size: 13.5px; color: #111827; }
+
+.info-desc { margin-bottom: 16px; }
+.desc-text { font-size: 13.5px; color: #374151; line-height: 1.6; margin: 6px 0 0; background: #f9fafb; border-radius: 8px; padding: 10px 12px; }
+
+.escalated-notice { font-size: 12px; font-weight: 600; color: #92400e; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 7px 12px; margin-bottom: 14px; }
+
+.review-divider { height: 1px; background: #f1f5f9; margin: 4px 0 18px; }
+
+.review-actions { display: flex; flex-direction: column; gap: 12px; }
+.action-label   { font-size: 12px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 8px; }
+.status-row     { display: flex; gap: 8px; align-items: center; }
+.review-select  { flex: 1; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 7px; font-size: 13px; background: #fff; color: #111827; }
+.btn-save-status { padding: 7px 16px; font-size: 13px; font-weight: 600; background: #1d4ed8; color: #fff; border: none; border-radius: 7px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.btn-save-status:hover:not(:disabled) { background: #1e40af; }
+.btn-save-status:disabled { opacity: 0.6; cursor: default; }
+
+.btn-escalate-full { width: 100%; padding: 9px 16px; font-size: 13px; font-weight: 600; color: #b45309; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; cursor: pointer; transition: background 0.15s; text-align: center; }
+.btn-escalate-full:hover { background: #fde68a; }
+
+.review-success { font-size: 12px; color: #15803d; margin: 6px 0 0; }
+.review-error   { font-size: 12px; color: #dc2626; margin: 6px 0 0; }
+
+.escalate-confirm { background: #fff8e6; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 14px; }
+.escalate-confirm-msg { font-size: 13px; color: #92400e; margin: 0 0 10px; line-height: 1.5; }
+.escalate-confirm-btns { display: flex; gap: 8px; }
+.btn-confirm-cancel { flex: 1; padding: 7px; font-size: 13px; font-weight: 600; background: #fff; color: #374151; border: 1px solid #d1d5db; border-radius: 7px; cursor: pointer; }
+.btn-confirm-cancel:hover { background: #f9fafb; }
+.btn-confirm-yes { flex: 1; padding: 7px; font-size: 13px; font-weight: 600; background: #b45309; color: #fff; border: none; border-radius: 7px; cursor: pointer; }
+.btn-confirm-yes:hover { background: #92400e; }
+
+/* ── Action cell layout ──────────────────────────────────────────────────── */
+.action-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Escalate button ─────────────────────────────────────────────────────── */
+.btn-escalate {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn-escalate:hover:not(:disabled) {
+  background: #fde68a;
+  border-color: #f59e0b;
+}
+.btn-escalate:disabled {
+  color: #6b7280;
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  cursor: default;
+}
+
+.btn-escalate--done {
+  color: #6b7280;
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  cursor: default;
+  font-size: 11px;
+}
+
+.badge-escalated {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  vertical-align: middle;
+  letter-spacing: 0.03em;
+}
+
 .page-container {
   padding: 28px 32px 40px;
   max-width: 1240px;
@@ -248,15 +376,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   background: #eff6ff;
   color: #0369a1;
   border: 1px solid #bae6fd;
-  border-radius: 7px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all .15s;
 }
+.btn-icon svg { width: 16px; height: 16px; }
 .btn-icon:hover { background: #dbeafe; border-color: #93c5fd; }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -322,6 +451,21 @@
   border-top: 1px solid #f1f5f9;
   background: #fafbfc;
 }
+
+/* ── Context block (edit modal read-only info) ────────────────────────── */
+.context-block {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.context-item { display: flex; flex-direction: column; gap: 2px; }
+.context-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
+.context-value { font-size: 13px; color: #1e293b; }
 
 /* ── Forms ────────────────────────────────────────────────────────────── */
 .form-group { margin-bottom: 14px; }

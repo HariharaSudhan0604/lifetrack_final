@@ -1,18 +1,34 @@
+using System.Security.Claims;
 using Authentication.API.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 namespace Authentication.API.Data;
 
 public class AuthDbContext : DbContext
 {
-    public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options) { }
+    private readonly IHttpContextAccessor? _httpCtx;
+
+    public AuthDbContext(DbContextOptions<AuthDbContext> options,
+                         IHttpContextAccessor? httpCtx = null)
+        : base(options)
+    {
+        _httpCtx = httpCtx;
+    }
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
-    // <summary>Set this before SaveChangesAsync to stamp the current user on audit rows.</summary>
-    public long? CurrentUserID { get; set; }
+    /// <summary>Resolves the acting user ID from the JWT claim, or null for system operations.</summary>
+    private long? CurrentUserID
+    {
+        get
+        {
+            var raw = _httpCtx?.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            return long.TryParse(raw, out var id) ? id : null;
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

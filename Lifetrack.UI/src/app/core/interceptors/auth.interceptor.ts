@@ -29,6 +29,11 @@ export class AuthInterceptor implements HttpInterceptor {
     return next.handle(cloned).pipe(
       catchError((err: HttpErrorResponse) => {
         if (err.status === 401) {
+          // A 401 from the login endpoint means wrong credentials — let the
+          // component handle it rather than treating it as a session expiry.
+          if (req.url.includes('/auth/login')) {
+            return throwError(() => err);
+          }
           // Token expired/invalid — clear session and redirect to login.
           // Use the static latch so 6 parallel forkJoin requests don't all
           // call logout() and race the router.

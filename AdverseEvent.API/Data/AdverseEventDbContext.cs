@@ -1,17 +1,33 @@
+using System.Security.Claims;
 using AdverseEvent.API.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 namespace AdverseEvent.API.Data;
 
 public class AdverseEventDbContext : DbContext
 {
-    public AdverseEventDbContext(DbContextOptions<AdverseEventDbContext> options) : base(options) { }
+    private readonly IHttpContextAccessor? _httpCtx;
+
+    public AdverseEventDbContext(DbContextOptions<AdverseEventDbContext> options,
+                                 IHttpContextAccessor? httpCtx = null)
+        : base(options)
+    {
+        _httpCtx = httpCtx;
+    }
 
     public DbSet<AdverseEventRecord> AdverseEvents => Set<AdverseEventRecord>();
     public DbSet<Deviation> Deviations => Set<Deviation>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
-    /// <summary>Set this before SaveChangesAsync to stamp the current user on audit rows.</summary>
-    public long? CurrentUserID { get; set; }
+    /// <summary>Resolves the acting user ID from the JWT claim, or null for system operations.</summary>
+    private long? CurrentUserID
+    {
+        get
+        {
+            var raw = _httpCtx?.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            return long.TryParse(raw, out var id) ? id : null;
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -12,11 +12,10 @@ public class ProtocolRepository : IProtocolRepository
     public Task<Protocol?> GetByIdAsync(long id) =>
         _db.Protocols.FirstOrDefaultAsync(p => p.ProtocolID == id);
 
-    public async Task<(IReadOnlyList<Protocol> Items, int TotalCount)> ListAsync(string? status, string? phase, string? search, int page, int pageSize)
+    public async Task<(IReadOnlyList<Protocol> Items, int TotalCount)> ListAsync(string? status, string? search, int page, int pageSize)
     {
         var q = _db.Protocols.AsNoTracking().AsQueryable();
         if (!string.IsNullOrEmpty(status)) q = q.Where(p => p.Status == status);
-        if (!string.IsNullOrEmpty(phase)) q = q.Where(p => p.Phase == phase);
         if (!string.IsNullOrEmpty(search))
         {
             var s = search.Trim().ToLower();

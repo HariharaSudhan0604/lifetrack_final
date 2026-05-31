@@ -44,6 +44,10 @@ public class EnrollmentService : IEnrollmentService
     {
         if (await _patients.GetByIdAsync(req.PatientID) is null)
             throw new DomainException($"Patient {req.PatientID} not found.");
+
+        if (await _enrollments.ExistsAsync(req.PatientID, req.SiteProtocolID))
+            throw new DomainException("This patient is already enrolled in the selected protocol and site.");
+
         var enrollment = new Enrollment { PatientID = req.PatientID, SiteProtocolID = req.SiteProtocolID, EnrollmentDate = req.EnrollmentDate, ConsentDate = req.ConsentDate, Status = req.Status, WithdrawalReason = null };
         await _enrollments.AddAsync(enrollment);
         BumpVersion(VersionKey);

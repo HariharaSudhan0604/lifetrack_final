@@ -159,13 +159,10 @@
                 <span class="badge" [ngClass]="actionClass(e.action)">{{ e.action }}</span>
               </td>
               <td>
-                <div class="user-cell" *ngIf="e.changedByUserID; else noUser">
-                  <div class="user-avatar">{{ userInitial(userName(e.changedByUserID)) }}</div>
-                  <span class="user-name">{{ userName(e.changedByUserID) }}</span>
-                </div>
+                <span *ngIf="e.changedByUserID; else noUser" class="user-name">{{ userName(e.changedByUserID) }}</span>
                 <ng-template #noUser><span class="cell-muted">System</span></ng-template>
               </td>
-              <td class="col-date cell-muted">{{ e.changedAt | date:'MMM d, y, h:mm a' }}</td>
+              <td class="col-date cell-muted">{{ e.changedAt | date:'dd MMM y, h:mm a':'+0530' }}</td>
               <td class="col-db">
                 <span class="db-badge" [ngClass]="sourceClass(e.source)">{{ e.source }}</span>
               </td>
@@ -225,15 +222,12 @@
             <tr *ngFor="let l of filteredLoginLogs; let i = index">
               <td class="col-num cell-muted">{{ i + 1 }}</td>
               <td>
-                <div class="user-cell">
-                  <div class="user-avatar">{{ userInitial(l.userName) }}</div>
-                  <span class="user-name">{{ l.userName || ('User #' + l.userID) }}</span>
-                </div>
+                <span class="user-name">{{ l.userName || ('User #' + l.userID) }}</span>
               </td>
               <td class="col-action">
                 <span class="badge" [ngClass]="loginActionClass(l.action)">{{ l.action }}</span>
               </td>
-              <td class="col-date cell-muted">{{ l.actionTime | date:'MMM d, y, h:mm a' }}</td>
+              <td class="col-date cell-muted">{{ l.actionTime | date:'dd MMM y, h:mm a':'+0530' }}</td>
             </tr>
           </tbody>
         </table>

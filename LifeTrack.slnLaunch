@@ -44,8 +44,7 @@
       },
       {
         "Path": "Lifetrack.UI\\Lifetrack.UI.esproj",
-        "Action": "Start",
-        "DebugTarget": "localhost (Edge)"
+        "Action": "StartWithoutDebugging"
       }
     ]
   }

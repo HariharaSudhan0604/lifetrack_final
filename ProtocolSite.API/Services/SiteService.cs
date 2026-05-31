@@ -9,13 +9,14 @@ namespace ProtocolSite.API.Services;
 public class SiteService : ISiteService
 {
     private readonly ISiteRepository _repo;
+    private readonly ISiteProtocolRepository _siteProtocols;
     private readonly IMemoryCache _cache;
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
     private const string VersionKey = "sites:list:version";
     private const string ItemPrefix = "sites:item";
 
-    public SiteService(ISiteRepository repo, IMemoryCache cache)
-    { _repo = repo; _cache = cache; }
+    public SiteService(ISiteRepository repo, ISiteProtocolRepository siteProtocols, IMemoryCache cache)
+    { _repo = repo; _siteProtocols = siteProtocols; _cache = cache; }
 
     public async Task<SiteResponse?> GetAsync(long id)
     {
@@ -43,6 +44,8 @@ public class SiteService : ISiteService
     public async Task<SiteResponse?> UpdateAsync(long id, UpdateSiteRequest req)
     {
         var site = await _repo.GetByIdAsync(id); if (site is null) return null;
+        if (req.Status == "Closed" && await _siteProtocols.HasAssignmentsAsync(id))
+            throw new DomainException("Cannot close a site that has assigned protocols. Remove all protocol assignments first.");
         site.Name = req.Name.Trim(); site.Location = req.Location.Trim(); site.Status = req.Status;
         await _repo.UpdateAsync(site); Invalidate(id); return Map(site);
     }

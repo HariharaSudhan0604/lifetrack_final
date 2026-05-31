@@ -51,6 +51,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// ── HTTP context (for audit stamping) ─────────────────────────────────────
+builder.Services.AddHttpContextAccessor();
+
 // ── Caching ────────────────────────────────────────────────────────────────
 builder.Services.AddMemoryCache();
 

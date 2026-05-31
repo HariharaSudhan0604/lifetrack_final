@@ -106,9 +106,6 @@ namespace Patient.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("PatientID"));
 
-                    b.Property<long?>("UserID")
-                        .HasColumnType("bigint");
-
                     b.Property<string>("ContactInfo")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -126,6 +123,9 @@ namespace Patient.API.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<long?>("UserID")
+                        .HasColumnType("bigint");
 
                     b.HasKey("PatientID");
 

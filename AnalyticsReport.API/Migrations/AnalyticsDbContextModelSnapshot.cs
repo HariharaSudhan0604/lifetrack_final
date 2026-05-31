@@ -66,22 +66,24 @@ namespace AnalyticsReport.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ReportID"));
 
-                    b.Property<int>("AECount")
-                        .HasColumnType("int");
-
-                    b.Property<double>("DropoutRate")
-                        .HasColumnType("float");
-
-                    b.Property<double>("EnrollmentRate")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime>("GeneratedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Scope")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.Property<int>("AECount").HasColumnType("int");
+                    b.Property<int>("ActiveEnrollments").HasColumnType("int");
+                    b.Property<int>("DevCount").HasColumnType("int");
+                    b.Property<double>("DropoutRate").HasColumnType("float");
+                    b.Property<double>("EnrollmentRate").HasColumnType("float");
+                    b.Property<DateTime>("GeneratedDate").HasColumnType("datetime2");
+                    b.Property<int>("MildAEs").HasColumnType("int");
+                    b.Property<int>("ModerateAEs").HasColumnType("int");
+                    b.Property<double>("PatientRetentionRate").HasColumnType("float");
+                    b.Property<int>("ReportedDevs").HasColumnType("int");
+                    b.Property<int>("ResolvedDevs").HasColumnType("int");
+                    b.Property<string>("Scope").IsRequired().HasMaxLength(200).HasColumnType("nvarchar(200)");
+                    b.Property<int>("SevereAEs").HasColumnType("int");
+                    b.Property<int>("TotalEnrollments").HasColumnType("int");
+                    b.Property<int>("TotalPatients").HasColumnType("int");
+                    b.Property<int>("TotalProtocols").HasColumnType("int");
+                    b.Property<int>("TotalVisits").HasColumnType("int");
+                    b.Property<double>("VisitComplianceRate").HasColumnType("float");
 
                     b.HasKey("ReportID");
 
