@@ -39,6 +39,10 @@ import { InvestigatorDeviationsPageComponent }      from './roles/investigator/p
 import { DataManagerDashboardComponent }   from './roles/data-manager/data-manager-dashboard.component';
 import { RegulatoryDashboardComponent }    from './roles/regulatory/regulatory-dashboard.component';
 import { PatientDashboardComponent }       from './roles/patient/patient-dashboard.component';
+import { PatientEnrollmentsPageComponent } from './roles/patient/pages/patient-enrollments-page.component';
+import { PatientVisitsPageComponent }      from './roles/patient/pages/patient-visits-page.component';
+import { PatientSymptomsPageComponent }    from './roles/patient/pages/patient-symptoms-page.component';
+import { NotificationsPageComponent }      from './pages/notifications-page/notifications-page.component';
 
 const routes: Routes = [
   {
@@ -54,6 +58,29 @@ const routes: Routes = [
       { path: 'data-manager', component: DataManagerDashboardComponent, data: { title: 'Dashboard' } },
       { path: 'regulatory',   component: RegulatoryDashboardComponent,  data: { title: 'Dashboard' } },
       { path: 'patient',      component: PatientDashboardComponent,     data: { title: 'My Trial' } },
+      {
+        path: 'notifications',
+        component: NotificationsPageComponent,
+        data: { title: 'Notifications' }
+      },
+      {
+        path: 'patient/enrollments',
+        component: PatientEnrollmentsPageComponent,
+        canActivate: [RoleGuard],
+        data: { title: 'My Enrollments', roles: ['Patient'] }
+      },
+      {
+        path: 'patient/visits',
+        component: PatientVisitsPageComponent,
+        canActivate: [RoleGuard],
+        data: { title: 'My Visits', roles: ['Patient'] }
+      },
+      {
+        path: 'patient/symptoms',
+        component: PatientSymptomsPageComponent,
+        canActivate: [RoleGuard],
+        data: { title: 'My Reported Symptoms', roles: ['Patient'] }
+      },
 
       // ── Admin-exclusive pages (Admin owns full CRUD — kept under /admin/) ────
       {
@@ -196,6 +223,10 @@ const routes: Routes = [
     DataManagerDashboardComponent,
     RegulatoryDashboardComponent,
     PatientDashboardComponent,
+    PatientEnrollmentsPageComponent,
+    PatientVisitsPageComponent,
+    PatientSymptomsPageComponent,
+    NotificationsPageComponent,
   ],
   imports: [
     CommonModule,

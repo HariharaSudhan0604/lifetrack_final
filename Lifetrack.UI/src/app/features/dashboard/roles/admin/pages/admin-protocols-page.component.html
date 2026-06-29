@@ -1,4 +1,4 @@
-<div class="page">
+﻿<div class="page">
 
   <!-- Header -->
   <div class="page-header">
@@ -14,9 +14,9 @@
 
   <!-- Filters -->
   <div class="filter-bar">
-    <div class="search-bar">
-      <span class="search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-      <input type="text" class="search-input" placeholder="Search by title…"
+    <div class="filter-search-wrap">
+      <span class="filter-search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input type="text" class="filter-search" placeholder="Search by title…"
         [value]="searchTerm" (input)="onSearch($any($event.target).value)" />
       <button class="search-clear" *ngIf="searchTerm" (click)="clearFilters()" title="Clear">&#10005;</button>
     </div>
@@ -308,3 +308,4 @@
     </form>
   </div>
 </div>
+

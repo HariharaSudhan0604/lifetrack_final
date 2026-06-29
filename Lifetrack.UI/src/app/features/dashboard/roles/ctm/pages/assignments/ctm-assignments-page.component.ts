@@ -15,8 +15,9 @@ import { environment } from '../../../../../../../environments/environment';
 export class CtmAssignmentsPageComponent implements OnInit {
 
   // ── Lookup maps ────────────────────────────────────────────────────────────
-  protocolMap: Record<number, string>     = {};
-  siteMap: Record<number, string>         = {};
+  protocolMap:     Record<number, string> = {};
+  protocolDetails: Record<number, any>   = {};   // stores full protocol for date validation
+  siteMap:         Record<number, string> = {};
   investigatorMap: Record<number, string> = {};
   investigatorOptions: any[]              = [];
   lookupsReady = false;
@@ -34,12 +35,14 @@ export class CtmAssignmentsPageComponent implements OnInit {
   readonly statuses = ['Pending', 'Active', 'Suspended', 'Completed'];
 
   // ── Edit modal ─────────────────────────────────────────────────────────────
-  showEditModal  = false;
-  editingItem: any = null;
+  showEditModal      = false;
+  editingItem: any   = null;
   editForm!: FormGroup;
-  editSubmitting = false;
-  editError      = '';
-  editSuccess    = false;
+  editSubmitting     = false;
+  editError          = '';
+  editSuccess        = false;
+  minInitiationDate  = '';   // today or protocol startDate (whichever is later)
+  maxInitiationDate  = '';   // protocol endDate (if set)
 
   constructor(
     private http: HttpClient,
@@ -62,8 +65,13 @@ export class CtmAssignmentsPageComponent implements OnInit {
     }).subscribe({
       next: ({ protocols, sites, users }) => {
         const pm: Record<number, string> = {};
-        (protocols.items ?? []).forEach((p: any) => pm[p.protocolID] = p.title);
-        this.protocolMap = pm;
+        const pd: Record<number, any>    = {};
+        (protocols.items ?? []).forEach((p: any) => {
+          pm[p.protocolID] = p.title;
+          pd[p.protocolID] = p;          // store full object for date validation
+        });
+        this.protocolMap     = pm;
+        this.protocolDetails = pd;
 
         const sm: Record<number, string> = {};
         (sites.items ?? []).forEach((s: any) => sm[s.siteID] = s.name);
@@ -141,6 +149,16 @@ export class CtmAssignmentsPageComponent implements OnInit {
   // ── Edit ───────────────────────────────────────────────────────────────────
   openEditModal(a: any) {
     this.editingItem = a;
+
+    // Compute date bounds from the protocol
+    const today    = new Date().toISOString().substring(0, 10);
+    const protocol = this.protocolDetails[a.protocolID];
+    const rawStart = protocol?.startDate ?? protocol?.StartDate ?? null;
+    const rawEnd   = protocol?.endDate   ?? protocol?.EndDate   ?? null;
+    const protoStart = rawStart ? rawStart.substring(0, 10) : today;
+    this.minInitiationDate = protoStart > today ? protoStart : today;
+    this.maxInitiationDate = rawEnd ? rawEnd.substring(0, 10) : '';
+
     this.editForm.patchValue({
       investigatorID: a.investigatorID ?? '',
       initiationDate: a.initiationDate ? a.initiationDate.substring(0, 10) : '',

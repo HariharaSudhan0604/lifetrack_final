@@ -1,7 +1,8 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, Subject } from 'rxjs';
 import { catchError, of, takeUntil } from 'rxjs';
+import { Router } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 import { UserInfo } from '../../../../core/models/auth.models';
 import { environment } from '../../../../../environments/environment';
@@ -73,6 +74,9 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
   investigatorLoading      = true;
   investigatorNotAssigned  = false;
 
+  /** keyed by siteProtocolID → user object for that enrollment's investigator */
+  investigatorMap: Record<number, any> = {};
+
   // ── Stats ─────────────────────────────────────────────────────────────────
   statsEnrollments       = 0;
   statsActiveEnrollments = 0;
@@ -82,9 +86,22 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
   loading        = true;
   detailsLoading = true;
   showNotifPanel    = false;
+  notifPage         = 1;
+  readonly notifPageSize = 5;
   showAllEnrollments = false;
   showAllVisits      = false;
   showAllSymptoms    = false;
+
+  // ── Page navigation shortcuts ─────────────────────────────────────────────
+  goToEnrollments(): void { this.router.navigate(['/dashboard/patient/enrollments']); }
+  goToVisits():      void { this.router.navigate(['/dashboard/patient/visits']); }
+  goToSymptoms():    void { this.router.navigate(['/dashboard/patient/symptoms']); }
+
+  get notifTotalPages(): number { return Math.max(1, Math.ceil(this.notifications.length / this.notifPageSize)); }
+  get pagedNotifications(): any[] {
+    const start = (this.notifPage - 1) * this.notifPageSize;
+    return this.notifications.slice(start, start + this.notifPageSize);
+  }
 
   // ── Symptom Report modal ──────────────────────────────────────────────────
   showSymptomModal   = false;
@@ -94,7 +111,7 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
   symptomForm        = { enrollmentID: '', description: '' };
   symptomFormErrors: Record<string, string> = {};
 
-  constructor(private auth: AuthService, private http: HttpClient) {
+  constructor(private auth: AuthService, private http: HttpClient, private router: Router) {
     this.user = this.auth.currentUser;
   }
 
@@ -169,26 +186,43 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
 
       this.detailsLoading = false;
 
-      // Fetch investigator user record for the active (or first) enrollment
+      // Fetch investigator for every enrollment (keyed by siteProtocolID)
       const activeEnrollment = this.enrollments.find((e: any) => e.status === 'Active') ?? this.enrollments[0];
-      if (activeEnrollment) {
-        const sp    = this.siteProtocolMap[activeEnrollment.siteProtocolID];
-        const invID = sp?.investigatorID ?? sp?.investigatorId ?? sp?.InvestigatorID;
-        if (invID) {
-          this.http.get<any>(`${environment.apiUrl}/users/${invID}`)
-            .pipe(catchError(() => of(null)), takeUntil(this.destroy$))
-            .subscribe(user => {
-              this.investigatorInfo    = user;
-              this.investigatorLoading = false;
-              if (!user) this.investigatorNotAssigned = true;
-            });
-        } else {
-          this.investigatorLoading     = false;
-          this.investigatorNotAssigned = true;
-        }
-      } else {
-        this.investigatorLoading     = false;
+      if (!activeEnrollment) {
+        this.investigatorLoading    = false;
         this.investigatorNotAssigned = true;
+      } else {
+        // Build a de-duped list of { siteProtocolID, investigatorID } pairs
+        const pairs: { spID: number; invID: number }[] = [];
+        const seen = new Set<number>();
+        for (const e of this.enrollments) {
+          const sp    = this.siteProtocolMap[e.siteProtocolID];
+          const invID = sp?.investigatorID ?? sp?.investigatorId ?? sp?.InvestigatorID;
+          if (invID && !seen.has(e.siteProtocolID)) {
+            seen.add(e.siteProtocolID);
+            pairs.push({ spID: e.siteProtocolID, invID });
+          }
+        }
+
+        if (pairs.length === 0) {
+          this.investigatorLoading    = false;
+          this.investigatorNotAssigned = true;
+        } else {
+          const requests = pairs.reduce((acc, { spID, invID }) => {
+            acc[spID] = this.http.get<any>(`${environment.apiUrl}/users/${invID}`)
+                          .pipe(catchError(() => of(null)));
+            return acc;
+          }, {} as Record<number, any>);
+
+          forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(results => {
+            this.investigatorMap = results;
+            // Keep backward-compat single investigatorInfo for the card widget
+            const firstSP       = activeEnrollment.siteProtocolID;
+            this.investigatorInfo = results[firstSP] ?? null;
+            this.investigatorLoading    = false;
+            this.investigatorNotAssigned = !this.investigatorInfo;
+          });
+        }
       }
     });
   }
@@ -378,6 +412,7 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
     return this.investigatorInfo?.phone ?? this.investigatorInfo?.Phone ?? '';
   }
 
+
   // ── Mark notification as read ─────────────────────────────────────────
   markNotificationRead(n: any): void {
     this.http.post(`${environment.apiUrl}/notifications/${n.notificationID}/read`, {})
@@ -389,6 +424,8 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
         }
       });
   }
+
+  navigateToNotifications(): void { this.router.navigate(['/dashboard/notifications']); }
 
   deleteNotification(n: any): void {
     this.http.delete(`${environment.apiUrl}/notifications/${n.notificationID}`)
@@ -404,3 +441,4 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 }
+

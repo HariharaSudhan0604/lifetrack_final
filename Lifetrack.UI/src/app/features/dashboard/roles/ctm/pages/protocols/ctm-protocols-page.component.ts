@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -36,7 +36,9 @@ export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
   private searchTimer: any;
 
   readonly phases   = ['Preclinical', 'Phase1', 'Phase2', 'Phase3', 'Phase4'];
-  readonly statuses = ['Draft', 'Active', 'Paused', 'Completed', 'Terminated'];
+  readonly statuses          = ['Draft', 'Upcoming', 'Active', 'Paused', 'Completed', 'Terminated']; // filter
+  readonly editStatuses      = ['Draft', 'Upcoming', 'Active', 'Paused', 'Completed', 'Terminated']; // full list
+  availableEditStatuses: string[] = this.editStatuses.slice(); // filtered by date in edit modal
 
   // ── Create modal ───────────────────────────────────────────────────────────
   showCreateModal  = false;
@@ -68,6 +70,8 @@ export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
   assignSubmitting   = false;
   assignError        = '';
   assignSuccess      = false;
+  minInitiationDate  = '';
+  maxInitiationDate  = '';
   siteOptions: any[]         = [];
   investigatorOptions: any[] = [];
   dropdownsLoading           = false;
@@ -85,8 +89,8 @@ export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
     this.createForm = this.fb.group({
       title:     ['', [Validators.required, Validators.minLength(3), Validators.maxLength(300)]],
       startDate: ['', Validators.required],
-      endDate:   [''],
-      status:    ['Draft', Validators.required]
+      endDate:   ['']
+      // status auto-calculated from dates — not shown in form
     }, { validators: dateRangeValidator });
 
     this.editForm = this.fb.group({
@@ -95,6 +99,21 @@ export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
       endDate:   [''],
       status:    ['', Validators.required]
     }, { validators: dateRangeValidator });
+
+    // When dates change: update allowed statuses and auto-set the date-derived status
+    const syncStatus = () => {
+      const start = this.editForm.get('startDate')?.value;
+      const end   = this.editForm.get('endDate')?.value;
+      if (!start) return;
+      this.availableEditStatuses = this.computeEditStatuses(start, end);
+      const derived = this.deriveProtocolStatus(start, end);
+      const current = this.editForm.get('status')?.value;
+      if (!this.availableEditStatuses.includes(current)) {
+        this.editForm.get('status')?.setValue(derived, { emitEvent: false });
+      }
+    };
+    this.editForm.get('startDate')!.valueChanges.subscribe(syncStatus);
+    this.editForm.get('endDate')!.valueChanges.subscribe(syncStatus);
 
     this.assignForm = this.fb.group({
       siteID:         ['', Validators.required],
@@ -149,7 +168,7 @@ export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
 
   // ── Create ─────────────────────────────────────────────────────────────────
   openCreateModal() {
-    this.createForm.reset({ status: 'Draft' });
+    this.createForm.reset();
     this.createError = ''; this.createSuccess = false;
     this.showCreateModal = true;
   }
@@ -163,13 +182,30 @@ export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
     if ((e.target as HTMLElement).classList.contains('sub-backdrop')) closer();
   }
 
+  private deriveProtocolStatus(startDate: string, endDate?: string): string {
+    const today = new Date().toISOString().substring(0, 10);
+    if (startDate > today) return 'Upcoming';
+    if (endDate && today > endDate) return 'Completed';
+    return 'Active';
+  }
+
+  private computeEditStatuses(startDate: string, endDate?: string): string[] {
+    const today  = new Date().toISOString().substring(0, 10);
+    const manual = ['Draft', 'Paused', 'Terminated'];
+    if (!startDate) return this.editStatuses.slice();
+    if (startDate > today)                         return [...manual, 'Upcoming'];
+    if (endDate && today > endDate)                return [...manual, 'Completed'];
+    return [...manual, 'Active'];
+  }
+
   submitCreate() {
     if (this.createForm.invalid) { this.createForm.markAllAsTouched(); return; }
     this.createSubmitting = true; this.createError = '';
     const v = this.createForm.value;
+    const autoStatus = this.deriveProtocolStatus(v.startDate, v.endDate);
     const body: any = {
       title: v.title.trim(),
-      startDate: v.startDate, status: v.status
+      startDate: v.startDate, status: autoStatus
     };
     if (v.endDate) body.endDate = v.endDate;
 
@@ -194,10 +230,15 @@ export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
     this.editingItem                = p;
     this.editProtocolHasAssignments = false;
     this.editCheckingAssignments    = true;
+
+    const startInput = this.toDateInput(p.startDate);
+    const endInput   = p.endDate ? this.toDateInput(p.endDate) : '';
+    this.availableEditStatuses = this.computeEditStatuses(startInput, endInput);
+
     this.editForm.patchValue({
       title:     p.title,
-      startDate: this.toDateInput(p.startDate),
-      endDate:   p.endDate ? this.toDateInput(p.endDate) : '',
+      startDate: startInput,
+      endDate:   endInput,
       status:    p.status
     });
     this.editError = ''; this.editSuccess = false;
@@ -281,6 +322,16 @@ export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
     this.assigningProtocol = p;
     this.assignError = ''; this.assignSuccess = false;
     this.assignForm.reset({ status: 'Pending' });
+
+    // Compute allowed date range: from later of (today, startDate) to endDate
+    // Handle both camelCase (startDate) and PascalCase (StartDate) from API
+    const today      = new Date().toISOString().substring(0, 10);
+    const rawStart   = p.startDate ?? p.StartDate ?? null;
+    const rawEnd     = p.endDate   ?? p.EndDate   ?? null;
+    const protoStart = rawStart ? rawStart.substring(0, 10) : today;
+    this.minInitiationDate = protoStart > today ? protoStart : today;
+    this.maxInitiationDate = rawEnd ? rawEnd.substring(0, 10) : '';
+
     this.showAssignModal = true;
     this.loadDropdowns();
   }
@@ -333,8 +384,8 @@ export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
   // ── Helpers ────────────────────────────────────────────────────────────────
   statusClass(s: string): string {
     const m: Record<string, string> = {
-      Active: 'badge-green', Draft: 'badge-slate',
-      Paused: 'badge-amber', Completed: 'badge-blue', Terminated: 'badge-red'
+      Active: 'badge-green', Upcoming: 'badge-blue', Draft: 'badge-slate',
+      Paused: 'badge-amber', Completed: 'badge-cyan', Terminated: 'badge-red'
     };
     return m[s] ?? 'badge-slate';
   }
@@ -382,3 +433,5 @@ export class CtmProtocolsPageComponent implements OnInit, OnDestroy {
     clearTimeout(this.searchTimer);
   }
 }
+
+

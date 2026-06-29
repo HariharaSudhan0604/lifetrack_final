@@ -1,3 +1,4 @@
+//Middleware for HTTP req
 import { Injectable } from '@angular/core';
 import {
   HttpInterceptor, HttpRequest,
@@ -11,11 +12,6 @@ import { Router } from '@angular/router';
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
 
-  /**
-   * Module-level latch so multiple parallel requests that all 401 at once
-   * (e.g. a dashboard's forkJoin firing 6 requests) only trigger a single
-   * logout + redirect instead of stacking up.
-   */
   private static logoutInFlight = false;
 
   constructor(private auth: AuthService, private router: Router) {}

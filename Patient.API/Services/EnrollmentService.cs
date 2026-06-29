@@ -29,12 +29,13 @@ public class EnrollmentService : IEnrollmentService
         return r;
     }
 
-    public async Task<PagedResult<EnrollmentResponse>> ListAsync(long? patientId, string? status, int page, int pageSize)
+    public async Task<PagedResult<EnrollmentResponse>> ListAsync(long? patientId, string? status, IReadOnlyList<long>? siteProtocolIds, int page, int pageSize)
     {
         var v = GetVersion(VersionKey);
-        var key = $"enrollments:list:v{v}:{page}:{pageSize}:{patientId}:{status}";
+        var spKey = siteProtocolIds is { Count: > 0 } ? string.Join(",", siteProtocolIds) : "all";
+        var key = $"enrollments:list:v{v}:{page}:{pageSize}:{patientId}:{status}:{spKey}";
         if (_cache.TryGetValue(key, out PagedResult<EnrollmentResponse>? cached) && cached is not null) return cached;
-        var (items, total) = await _enrollments.ListAsync(patientId, status, page, pageSize);
+        var (items, total) = await _enrollments.ListAsync(patientId, status, siteProtocolIds, page, pageSize);
         var result = new PagedResult<EnrollmentResponse> { Page = page, PageSize = pageSize, TotalCount = total, Items = items.Select(Map).ToList() };
         _cache.Set(key, result, CacheDuration);
         return result;
@@ -79,7 +80,7 @@ public class EnrollmentService : IEnrollmentService
     /// </summary>
     private async Task SyncPatientStatusAsync(long patientId)
     {
-        var (allEnrollments, _) = await _enrollments.ListAsync(patientId, null, 1, 200);
+        var (allEnrollments, _) = await _enrollments.ListAsync(patientId, null, null, 1, 200);
         var derivedStatus = DerivePatientStatus(allEnrollments);
         await _patients.UpdateEnrollmentStatusAsync(patientId, derivedStatus);
         // Invalidate both the per-item and list-level patient caches

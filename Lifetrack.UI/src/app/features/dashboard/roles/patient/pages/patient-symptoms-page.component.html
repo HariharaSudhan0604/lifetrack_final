@@ -1,0 +1,57 @@
+<main class="page-root">
+  <div class="page-header">
+    <div class="page-header-left">
+      <button class="back-btn" (click)="goBack()">&#8592; Back</button>
+      <div>
+        <h1 class="page-title">My Reported Symptoms</h1>
+        <p class="page-sub">All symptoms you have reported during your trials</p>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-box">
+    <div class="spinner"></div>
+    <p>Loading reported symptoms…</p>
+  </div>
+
+  <div class="filter-bar" *ngIf="!loading">
+    <div class="filter-search-wrap">
+      <span class="filter-search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input type="text" class="filter-search" placeholder="Search symptoms or protocol…" [(ngModel)]="searchTerm" />
+    </div>
+    <select class="filter-select" [(ngModel)]="filterSeverity">
+      <option value="">All Severities</option>
+      <option *ngFor="let s of severities" [value]="s">{{ s }}</option>
+    </select>
+    <select class="filter-select" [(ngModel)]="filterStatus">
+      <option value="">All Statuses</option>
+      <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+    </select>
+  </div>
+
+  <div class="table-card" *ngIf="!loading">
+    <div *ngIf="filtered.length === 0" class="empty-state">
+      <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+      <p class="empty-title">No symptoms found</p>
+      <p class="empty-sub">You haven't reported any symptoms yet.</p>
+    </div>
+    <table class="data-table" *ngIf="filtered.length > 0">
+      <thead>
+        <tr><th>#</th><th>Description</th><th>Protocol</th><th>Severity</th><th>Status</th><th>Reported On</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of filtered; let i = index">
+          <td class="col-idx">{{ i + 1 }}</td>
+          <td class="col-desc">{{ a.description }}</td>
+          <td>{{ protocolName(a) }}</td>
+          <td><span class="badge" [ngClass]="severityClass(a.severity)">{{ a.severity }}</span></td>
+          <td><span class="badge" [ngClass]="statusClass(a.status)">{{ a.status }}</span></td>
+          <td>{{ a.reportedDate | date:'MMM d, y' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="table-footer" *ngIf="filtered.length > 0">
+      <span class="footer-info">Showing {{ filtered.length }} of {{ symptoms.length }} symptoms</span>
+    </div>
+  </div>
+</main>

@@ -33,12 +33,15 @@ export class AdminAssignmentsPageComponent implements OnInit {
   readonly statuses = ['Pending', 'Active', 'Suspended', 'Completed'];
 
   // ── Edit modal ─────────────────────────────────────────────────────────────
-  showEditModal  = false;
-  editingItem: any = null;
+  showEditModal     = false;
+  editingItem: any  = null;
   editForm!: FormGroup;
-  editSubmitting = false;
-  editError      = '';
-  editSuccess    = false;
+  editSubmitting    = false;
+  editError         = '';
+  editSuccess       = false;
+  minInitiationDate = '';
+  maxInitiationDate = '';
+  protocolDetails:  Record<number, any> = {};
 
   constructor(
     private http: HttpClient,
@@ -62,8 +65,10 @@ export class AdminAssignmentsPageComponent implements OnInit {
     }).subscribe({
       next: ({ protocols, sites, users }) => {
         const pm: Record<number, string> = {};
-        (protocols.items ?? []).forEach((p: any) => pm[p.protocolID] = p.title);
-        this.protocolMap = pm;
+        const pd: Record<number, any>    = {};
+        (protocols.items ?? []).forEach((p: any) => { pm[p.protocolID] = p.title; pd[p.protocolID] = p; });
+        this.protocolMap     = pm;
+        this.protocolDetails = pd;
 
         const sm: Record<number, string> = {};
         (sites.items ?? []).forEach((s: any) => sm[s.siteID] = s.name);
@@ -120,6 +125,15 @@ export class AdminAssignmentsPageComponent implements OnInit {
   // ── Edit ───────────────────────────────────────────────────────────────────
   openEditModal(a: any) {
     this.editingItem = a;
+
+    const today    = new Date().toISOString().substring(0, 10);
+    const protocol = this.protocolDetails[a.protocolID];
+    const rawStart = protocol?.startDate ?? protocol?.StartDate ?? null;
+    const rawEnd   = protocol?.endDate   ?? protocol?.EndDate   ?? null;
+    const protoStart = rawStart ? rawStart.substring(0, 10) : today;
+    this.minInitiationDate = protoStart > today ? protoStart : today;
+    this.maxInitiationDate = rawEnd ? rawEnd.substring(0, 10) : '';
+
     this.editForm.patchValue({
       investigatorID: a.investigatorID ?? '',
       initiationDate: a.initiationDate ? a.initiationDate.substring(0, 10) : '',

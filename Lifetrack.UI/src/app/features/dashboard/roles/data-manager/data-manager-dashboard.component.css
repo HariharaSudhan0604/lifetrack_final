@@ -38,6 +38,14 @@
 .notif-mark-read-btn:hover { background:#bae6fd; border-color:#7dd3fc; color:#0c4a6e; }
 .notif-delete-btn { display:inline-flex; align-items:center; justify-content:center; margin-top:6px; margin-left:4px; padding:4px 6px; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; border-radius:5px; cursor:pointer; transition:all .15s; line-height:1; }
 .notif-delete-btn:hover { background:#fee2e2; border-color:#fca5a5; }
+.notif-hdr-right    { display:flex; align-items:center; gap:6px; }
+.notif-view-all-btn { padding:2px 8px; font-size:11px; font-weight:600; background:transparent; border:1px solid #e2e8f0; border-radius:5px; cursor:pointer; color:#475569; transition:all .15s; white-space:nowrap; }
+.notif-view-all-btn:hover { background:#f1f5f9; border-color:#cbd5e1; }
+.notif-pager      { display:flex; align-items:center; justify-content:center; gap:10px; padding:8px 12px; border-top:1px solid #f1f5f9; }
+.notif-pg-btn     { width:26px; height:26px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; font-size:14px; color:#374151; transition:all .15s; }
+.notif-pg-btn:hover:not(:disabled) { background:#f1f5f9; border-color:#cbd5e1; }
+.notif-pg-btn:disabled { opacity:0.35; cursor:default; }
+.notif-pg-info    { font-size:12px; color:#64748b; font-weight:500; }
 
 /* ── Root ─────────────────────────────────────────────────────────────── */
 .dm-dash {

@@ -30,6 +30,7 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
   siteProtocolIDs: Set<number> = new Set();
   searchTerm       = '';
   selectedSeverity = '';
+  selectedStatus   = '';
 
   protocolMap: Record<number, string> = {};
   siteMap: Record<number, string> = {};
@@ -63,8 +64,8 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
     Open:            'Reported',       // legacy DB value → normalise display
     UnderReview:     'Under Review',
     'Under Review':  'Under Review',   // legacy DB value
-    Resolved:        'Resolved',
-    Closed:          'Closed'
+    Resolved:        'Resolved'
+    // 'Closed' removed — not a valid deviation status
   };
 
   constructor(
@@ -142,17 +143,21 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
     const term = this.searchTerm.trim().toLowerCase();
     return this.filteredDeviations.filter(d => {
       const matchSeverity = !this.selectedSeverity || d.severity === this.selectedSeverity;
+      const matchStatus   = !this.selectedStatus   ||
+        d.status === this.selectedStatus ||
+        this.statusLabel[d.status] === this.selectedStatus;
       const matchSearch   = !term ||
         this.protocolName(d).toLowerCase().includes(term) ||
         this.siteName(d).toLowerCase().includes(term) ||
         d.description?.toLowerCase().includes(term);
-      return matchSeverity && matchSearch;
+      return matchSeverity && matchStatus && matchSearch;
     });
   }
 
   clearSearch(): void {
     this.searchTerm       = '';
     this.selectedSeverity = '';
+    this.selectedStatus   = '';
   }
 
   spLabel(sp: any): string {
@@ -243,7 +248,6 @@ export class InvestigatorDeviationsPageComponent implements OnInit {
     if (s === 'Reported'    || s === 'Open')          return 'badge-red';
     if (s === 'UnderReview' || s === 'Under Review')  return 'badge-amber';
     if (s === 'Resolved')                              return 'badge-green';
-    if (s === 'Closed')                                return 'badge-slate';
     return 'badge-slate';
   }
 

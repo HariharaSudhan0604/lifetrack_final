@@ -18,30 +18,25 @@
 
   <!-- Filter Bar -->
   <div class="filter-bar">
-    <div class="filter-group search-group">
-      <svg class="search-icon-inline" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <div class="filter-search-wrap">
+      <span class="filter-search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       <input class="filter-search" [(ngModel)]="searchTerm"
         (ngModelChange)="onStatusFilterChange()"
         placeholder="Search by description…">
     </div>
-    <div class="filter-group">
-      <select class="filter-select" [(ngModel)]="selectedSeverity" (change)="onStatusFilterChange()">
-        <option value="">All Severities</option>
-        <option value="Mild">Mild</option>
-        <option value="Moderate">Moderate</option>
-        <option value="Severe">Severe</option>
-        <option value="Critical">Critical</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <select id="statusFilter" class="filter-select" [(ngModel)]="selectedStatus" (change)="onStatusFilterChange()">
-        <option value="">All Statuses</option>
-        <option value="Reported">Reported</option>
-        <option value="Under Review">Under Review</option>
-        <option value="Resolved">Resolved</option>
-        <option value="Closed">Closed</option>
-      </select>
-    </div>
+    <select class="filter-select" [(ngModel)]="selectedSeverity" (change)="onStatusFilterChange()">
+      <option value="">All Severities</option>
+      <option value="Mild">Mild</option>
+      <option value="Moderate">Moderate</option>
+      <option value="Severe">Severe</option>
+      <option value="Critical">Critical</option>
+    </select>
+    <select class="filter-select" [(ngModel)]="selectedStatus" (change)="onStatusFilterChange()">
+      <option value="">All Statuses</option>
+      <option value="Reported">Reported</option>
+      <option value="Under Review">Under Review</option>
+      <option value="Resolved">Resolved</option>
+    </select>
     <button class="btn-clear" (click)="clearFilter()">Clear</button>
   </div>
 
@@ -162,7 +157,6 @@
                 <option value="Reported">Reported</option>
                 <option value="Under Review">Under Review</option>
                 <option value="Resolved">Resolved</option>
-                <option value="Closed">Closed</option>
               </select>
               <button class="btn-save-status" (click)="saveReviewStatus()" [disabled]="reviewSaving">
                 {{ reviewSaving ? 'Saving…' : 'Save' }}
@@ -172,7 +166,7 @@
             <p class="review-error"   *ngIf="reviewError">{{ reviewError }}</p>
           </div>
 
-          @if (isCTM && !escalatedAEIds.has(reviewAE.eventID) && reviewAE.status !== 'Resolved' && reviewAE.status !== 'Closed') {
+          @if (isCTM && !escalatedAEIds.has(reviewAE.eventID) && reviewAE.status !== 'Resolved') {
             @if (!showEscalateConfirm) {
               <button class="btn-escalate-full" (click)="showEscalateConfirm = true">
                 ⚠ Escalate to Regulatory Officer

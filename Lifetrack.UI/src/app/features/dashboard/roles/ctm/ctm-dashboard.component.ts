@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { catchError, of } from 'rxjs';
@@ -27,10 +27,18 @@ export class CtmDashboardComponent implements OnInit, OnDestroy {
   loading = true;
 
   // ── Notifications ──────────────────────────────────────────────────────────
-  notifications:  any[] = [];
-  notifLoading  = true;
+  notifications:   any[] = [];
+  notifLoading   = true;
   showNotifPanel = false;
+  notifPage      = 1;
+  readonly notifPageSize = 5;
+
   get unreadCount(): number { return this.notifications.filter(n => n.status === 'Unread').length; }
+  get notifTotalPages(): number { return Math.max(1, Math.ceil(this.notifications.length / this.notifPageSize)); }
+  get pagedNotifications(): any[] {
+    const start = (this.notifPage - 1) * this.notifPageSize;
+    return this.notifications.slice(start, start + this.notifPageSize);
+  }
 
   constructor(
     private auth:   AuthService,
@@ -124,7 +132,12 @@ export class CtmDashboardComponent implements OnInit, OnDestroy {
       .subscribe({ next: () => { n.status = 'Read'; } });
   }
 
+  navigateToNotifications(): void { this.router.navigate(['/dashboard/notifications']); }
+
   deleteNotification(n: any): void {
+      // http.delete(url) — no request body needed for DELETE
+      // Returns Observable<Object> by default, or type it as delete<void> for 204 responses
+
     this.http.delete(`${environment.apiUrl}/notifications/${n.notificationID}`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({ next: () => {
@@ -137,3 +150,4 @@ export class CtmDashboardComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 }
+

@@ -52,6 +52,14 @@ public class SiteProtocolService : ISiteProtocolService
             throw new DomainException(
                 $"Protocol '{protocol.Title}' is currently {protocol.Status}. Only Active protocols can accept new site assignments.");
 
+        if (req.InvestigatorID.HasValue &&
+            await _repo.ExistsAsync(req.ProtocolID, req.SiteID, req.InvestigatorID.Value))
+            throw new DomainException(
+                "This investigator is already assigned to the same protocol and site combination.");
+
+        if (req.InitiationDate.HasValue)
+            ValidateInitiationDate(req.InitiationDate.Value, protocol);
+
         var sp = new SiteProtocol { SiteID = req.SiteID, ProtocolID = req.ProtocolID, InvestigatorID = req.InvestigatorID, InitiationDate = req.InitiationDate, Phase = req.Phase, Status = req.Status };
         await _repo.AddAsync(sp); BumpVersion(); return Map(sp);
     }
@@ -59,8 +67,33 @@ public class SiteProtocolService : ISiteProtocolService
     public async Task<SiteProtocolResponse?> UpdateAsync(long id, UpdateSiteProtocolRequest req)
     {
         var sp = await _repo.GetByIdAsync(id); if (sp is null) return null;
+
+        if (req.InvestigatorID.HasValue &&
+            await _repo.ExistsAsync(sp.ProtocolID, sp.SiteID, req.InvestigatorID.Value, excludeId: id))
+            throw new DomainException(
+                "This investigator is already assigned to the same protocol and site combination.");
+
+        if (req.InitiationDate.HasValue)
+        {
+            var protocol = await _protocols.GetByIdAsync(sp.ProtocolID);
+            if (protocol is not null) ValidateInitiationDate(req.InitiationDate.Value, protocol);
+        }
+
         sp.InvestigatorID = req.InvestigatorID; sp.InitiationDate = req.InitiationDate; sp.Phase = req.Phase; sp.Status = req.Status;
         await _repo.UpdateAsync(sp); Invalidate(id); return Map(sp);
+    }
+
+    private static void ValidateInitiationDate(DateTime initiationDate, Protocol protocol)
+    {
+        var date = initiationDate.Date;
+
+        if (date < protocol.StartDate.Date)
+            throw new DomainException(
+                $"Initiation date must be on or after the protocol start date ({protocol.StartDate:MMM d, yyyy}).");
+
+        if (protocol.EndDate.HasValue && date > protocol.EndDate.Value.Date)
+            throw new DomainException(
+                $"Initiation date must be on or before the protocol end date ({protocol.EndDate.Value:MMM d, yyyy}).");
     }
 
     private int GetVersion() => _cache.GetOrCreate(VersionKey, e => { e.Priority = CacheItemPriority.NeverRemove; return 0; });

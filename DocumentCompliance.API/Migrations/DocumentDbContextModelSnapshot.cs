@@ -66,7 +66,16 @@ namespace DocumentCompliance.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("DocumentID"));
 
-                    b.Property<long>("ProtocolID")
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<long?>("ProtocolID")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Status")
@@ -74,10 +83,10 @@ namespace DocumentCompliance.API.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("Type")
+                    b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<DateTime>("UploadedAt")
                         .HasColumnType("datetime2");
@@ -91,6 +100,8 @@ namespace DocumentCompliance.API.Migrations
                         .HasColumnType("nvarchar(20)");
 
                     b.HasKey("DocumentID");
+
+                    b.HasIndex("Category");
 
                     b.HasIndex("ProtocolID");
 

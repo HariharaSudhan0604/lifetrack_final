@@ -1,0 +1,59 @@
+<main class="page-root">
+  <div class="page-header">
+    <div class="page-header-left">
+      <button class="back-btn" (click)="goBack()">&#8592; Back</button>
+      <div>
+        <h1 class="page-title">My Trial Enrollments</h1>
+        <p class="page-sub">All your clinical trial enrollments and details</p>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-box">
+    <div class="spinner"></div>
+    <p>Loading enrollments…</p>
+  </div>
+
+  <div class="filter-bar" *ngIf="!loading">
+    <div class="filter-search-wrap">
+      <span class="filter-search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input type="text" class="filter-search" placeholder="Search protocol or site…" [(ngModel)]="searchTerm" />
+    </div>
+    <select class="filter-select" [(ngModel)]="filterStatus">
+      <option value="">All Statuses</option>
+      <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+    </select>
+  </div>
+
+  <div class="table-card" *ngIf="!loading">
+    <div *ngIf="filtered.length === 0" class="empty-state">
+      <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <p class="empty-title">No enrollments found</p>
+      <p class="empty-sub">You haven't been enrolled in any trials yet.</p>
+    </div>
+    <table class="data-table" *ngIf="filtered.length > 0">
+      <thead>
+        <tr><th>#</th><th>Protocol</th><th>Site</th><th>Enrolled On</th><th>Consent Date</th><th>Status</th><th>Investigator</th><th>Contact</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let e of filtered; let i = index">
+          <td class="col-idx">{{ i + 1 }}</td>
+          <td>{{ protocolName(e.siteProtocolID) }}</td>
+          <td>{{ siteName(e.siteProtocolID) }}</td>
+          <td>{{ e.enrollmentDate | date:'MMM d, y' }}</td>
+          <td>{{ e.consentDate ? (e.consentDate | date:'MMM d, y') : '—' }}</td>
+          <td><span class="badge" [ngClass]="statusClass(e.status)">{{ e.status }}</span></td>
+          <td>{{ investigatorName(e.siteProtocolID) || '—' }}</td>
+          <td>
+            <a *ngIf="investigatorEmail(e.siteProtocolID)" [href]="'mailto:' + investigatorEmail(e.siteProtocolID)" class="contact-link">{{ investigatorEmail(e.siteProtocolID) }}</a>
+            <span *ngIf="!investigatorEmail(e.siteProtocolID)">—</span>
+            <span *ngIf="investigatorPhone(e.siteProtocolID)" class="phone-text">&nbsp;· {{ investigatorPhone(e.siteProtocolID) }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="table-footer" *ngIf="filtered.length > 0">
+      <span class="footer-info">Showing {{ filtered.length }} of {{ enrollments.length }} enrollments</span>
+    </div>
+  </div>
+</main>

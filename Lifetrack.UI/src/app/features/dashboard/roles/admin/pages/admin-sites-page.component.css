@@ -1,4 +1,4 @@
-/* ── Page Layout ── */
+﻿/* ── Page Layout ── */
 .page {
   padding: 28px 32px 40px;
   max-width: 1100px;
@@ -58,36 +58,13 @@
   flex-wrap: wrap;
 }
 
-.search-bar {
-  display: flex;
-  align-items: center;
-  background: #fff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0 14px;
-  gap: 10px;
-  flex: 1;
-  min-width: 240px;
-  max-width: 420px;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.search-bar:focus-within {
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
-}
-.search-icon  { font-size: 16px; color: #94a3b8; flex-shrink: 0; }
-.search-input {
-  flex: 1; border: none; outline: none;
-  font-size: 14px; font-family: inherit; color: #1e293b;
-  padding: 11px 0; background: transparent;
-}
-.search-input::placeholder { color: #aab4c4; }
-.search-clear {
-  background: none; border: none; cursor: pointer;
-  color: #94a3b8; font-size: 13px; padding: 0; line-height: 1;
-  flex-shrink: 0; transition: color 0.15s;
-}
-.search-clear:hover { color: #475569; }
+
+
+
+
+
+
+
 
 .filter-select {
   padding: 10px 36px 10px 14px;
@@ -376,6 +353,24 @@
   .page { padding: 20px 16px 32px; }
   .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   .filter-bar { flex-direction: column; align-items: stretch; }
-  .search-bar { max-width: 100%; }
+  
   .col-actions { width: auto; }
 }
+
+/* ── Uniform filter bar ──────────────────────────────────────────────────── */
+
+/* ── Uniform filter search bar ───────────────────────────────────────────── */
+.filter-search-wrap {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 10px;
+  border: 1.5px solid #e2e8f0; border-radius: 8px;
+  background: #fff; transition: border-color .15s;
+}
+.filter-search-wrap:focus-within { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
+.filter-search-icon { color: #9ca3af; display:flex; align-items:center; flex-shrink:0; }
+.filter-search {
+  border: none; outline: none;
+  font-size: 0.82rem; width: 200px; padding: 7px 0;
+  background: transparent; color: #1e293b;
+}
+.filter-search::placeholder { color: #94a3b8; }

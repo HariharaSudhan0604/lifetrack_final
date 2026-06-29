@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { forkJoin, catchError, of } from 'rxjs';
+import { forkJoin, catchError, of, switchMap } from 'rxjs';
 import { AuthService } from '../../../../../../core/services/auth.service';
 import { NavigationService } from '../../../../../../core/services/navigation.service';
 import { environment } from '../../../../../../../environments/environment';
@@ -34,11 +34,11 @@ function fmtDate(iso: string): string {
 export class InvestigatorEnrollmentsPageComponent implements OnInit {
 
   // ── List ───────────────────────────────────────────────────────────────────
-  enrollments: any[]              = [];
-  patientMap: Record<number, any> = {};
+  enrollments:     any[]               = [];
+  patientMap:      Record<number, any> = {};
   siteProtocolMap: Record<number, any> = {};
-  protocolMap: Record<number, string>  = {};
-  siteMap: Record<number, string>      = {};
+  protocolMap:     Record<number, string> = {};
+  siteMap:         Record<number, string> = {};
   loading = true;
 
   // ── Filters ────────────────────────────────────────────────────────────────
@@ -53,7 +53,8 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
   success          = '';
   patientOptions: any[]      = [];
   siteProtocolOptions: any[] = [];
-  statuses = ['Screened', 'Enrolled', 'Active', 'Completed', 'Withdrawn'];
+  statuses     = ['Screening', 'Enrolled', 'Active', 'Completed', 'Withdrawn']; // filter
+  editStatuses = ['Screening', 'Enrolled', 'Active', 'Completed', 'Withdrawn']; // edit modal
 
   // ── Edit Modal ─────────────────────────────────────────────────────────────
   showEditModal    = false;
@@ -99,8 +100,8 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
     this.form = this.fb.group({
       patientID:      ['', Validators.required],
       siteProtocolID: ['', Validators.required],
-      enrollmentDate: ['', Validators.required],
-      status:         ['Screening', Validators.required]
+      enrollmentDate: ['', Validators.required]
+      // status always 'Screening' for new enrollments — not shown in form
     }, { validators: this.enrollmentAfterInitiationValidator });
 
     this.editForm = this.fb.group({
@@ -129,41 +130,61 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
   }
 
   loadData() {
-    const uid  = this.auth.currentUser?.userID;
+    const uid = this.auth.currentUser?.userID;
 
-    forkJoin({
-      // All site-protocols — needed to resolve protocol/site names for every row
-      allSiteProtocols: this.http.get<any>(`${environment.apiUrl}/site-protocols?pageSize=500`)
-        .pipe(catchError(() => of({ items: [] }))),
-      // This investigator's assigned site-protocols — used for the enroll-modal dropdown
-      mySiteProtocols:  this.http.get<any>(`${environment.apiUrl}/site-protocols?investigatorId=${uid}&pageSize=100`)
-        .pipe(catchError(() => of({ items: [] }))),
-      protocols:   this.http.get<any>(`${environment.apiUrl}/protocols?pageSize=200`)
-        .pipe(catchError(() => of({ items: [] }))),
-      sites:       this.http.get<any>(`${environment.apiUrl}/sites?pageSize=200`)
-        .pipe(catchError(() => of({ items: [] }))),
-      patients:    this.http.get<any>(`${environment.apiUrl}/patients?pageSize=200`)
-        .pipe(catchError(() => of({ items: [] }))),
-      enrollments: this.http.get<any>(`${environment.apiUrl}/enrollments?pageSize=500`)
-        .pipe(catchError(() => of({ items: [] }))),
-    }).subscribe(({ allSiteProtocols, mySiteProtocols, protocols, sites, patients, enrollments }) => {
-      // Build lookup maps from ALL site-protocols so every row's names resolve correctly
-      (protocols.items ?? []).forEach((p: any)  => this.protocolMap[p.protocolID]              = p.title);
-      (sites.items ?? []).forEach((s: any)       => this.siteMap[s.siteID]                      = s.name);
-      (patients.items ?? []).forEach((p: any)    => this.patientMap[p.patientID]                = p);
-      (allSiteProtocols.items ?? []).forEach((sp: any) => this.siteProtocolMap[sp.siteProtocolID] = sp);
+    //fetch investigator's own site-protocols first
+    this.http.get<any>(`${environment.apiUrl}/site-protocols?investigatorId=${uid}&pageSize=100`)
+      .pipe(catchError(() => of({ items: [] })))
+      .pipe(
+        switchMap(mySiteProtocols => {
+          const myIds: number[] = (mySiteProtocols.items ?? []).map((sp: any) => sp.siteProtocolID);
 
-      // Enroll-modal dropdown: only Active assignments
-      const myItems  = mySiteProtocols.items ?? [];
-      const allItems = allSiteProtocols.items ?? [];
-      const base     = myItems.length > 0 ? myItems : allItems;
-      this.siteProtocolOptions = base.filter((sp: any) => sp.status === 'Active');
-      this.patientOptions      = patients.items ?? [];
+          // If investigator has no assigned protocols, skip the enrollments call entirely
+          // to avoid fetching all enrollments from the database
+          if (myIds.length === 0) {
+            return forkJoin({
+              mySiteProtocols: of(mySiteProtocols),
+              protocols:  this.http.get<any>(`${environment.apiUrl}/protocols?pageSize=200`)
+                .pipe(catchError(() => of({ items: [] }))),
+              sites:      this.http.get<any>(`${environment.apiUrl}/sites?pageSize=200`)
+                .pipe(catchError(() => of({ items: [] }))),
+              patients:   this.http.get<any>(`${environment.apiUrl}/patients?pageSize=200`)
+                .pipe(catchError(() => of({ items: [] }))),
+              enrollments: of({ items: [] }),   // no protocols → no enrollments
+            });
+          }
 
-      // Show ALL enrollments — no investigator filter so real data is always visible
-      this.enrollments = enrollments.items ?? [];
-      this.loading = false;
-    });
+          const spParam = `&siteProtocolIds=${myIds.join(',')}`;
+
+          // Step 2: fetch everything in parallel, enrollments filtered by investigator's protocols
+          return forkJoin({
+            mySiteProtocols: of(mySiteProtocols),
+            protocols:  this.http.get<any>(`${environment.apiUrl}/protocols?pageSize=200`)
+              .pipe(catchError(() => of({ items: [] }))),
+            sites:      this.http.get<any>(`${environment.apiUrl}/sites?pageSize=200`)
+              .pipe(catchError(() => of({ items: [] }))),
+            patients:   this.http.get<any>(`${environment.apiUrl}/patients?pageSize=200`)
+              .pipe(catchError(() => of({ items: [] }))),
+            enrollments: this.http.get<any>(`${environment.apiUrl}/enrollments?pageSize=500${spParam}`) //sending inves specific siteprot ids
+              .pipe(catchError(() => of({ items: [] }))),
+          });
+        })
+      )
+      .subscribe(({ mySiteProtocols, protocols, sites, patients, enrollments }) => {
+        // Build lookup maps — only investigator's protocols needed since enrollments are filtered
+        (protocols.items  ?? []).forEach((p: any)  => this.protocolMap[p.protocolID]                = p.title);
+        (sites.items      ?? []).forEach((s: any)  => this.siteMap[s.siteID]                        = s.name);
+        (patients.items   ?? []).forEach((p: any)  => this.patientMap[p.patientID]                  = p);
+        (mySiteProtocols.items ?? []).forEach((sp: any) => this.siteProtocolMap[sp.siteProtocolID]  = sp);
+
+        // Enroll-modal dropdown: only this investigator's Active assignments
+        this.siteProtocolOptions = (mySiteProtocols.items ?? []).filter((sp: any) => sp.status === 'Active');
+        this.patientOptions      = patients.items ?? [];
+
+        // Backend already filtered enrollments by siteProtocolIds — no client-side filter needed
+        this.enrollments = enrollments.items ?? [];
+        this.loading = false;
+      });
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -233,7 +254,7 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
 
   // ── Modal ──────────────────────────────────────────────────────────────────
   openModal() {
-    this.form.reset({ status: 'Screening' });
+    this.form.reset();
     this.minEnrollmentDate = '';
     this.error   = '';
     this.success = '';
@@ -251,7 +272,7 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
       patientID:      +v.patientID,
       siteProtocolID: +v.siteProtocolID,
       enrollmentDate: v.enrollmentDate,
-      status:         v.status
+      status:         'Screening'  // always Screening for new enrollments
     };
 
     this.http.post<any>(`${environment.apiUrl}/enrollments`, payload).subscribe({
@@ -294,7 +315,7 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
     const m: Record<string, string> = {
       Active:    'badge-green',
       Enrolled:  'badge-cyan',
-      Screened:  'badge-purple',
+      Screening: 'badge-purple',
       Completed: 'badge-blue',
       Withdrawn: 'badge-red'
     };
@@ -349,6 +370,25 @@ export class InvestigatorEnrollmentsPageComponent implements OnInit {
     this.http.put<any>(`${environment.apiUrl}/enrollments/${this.editingEnrollment.enrollmentID}`, payload).subscribe({
       next: () => {
         Object.assign(this.editingEnrollment, payload);
+
+        // Notify patient when withdrawn
+        if (payload.status === 'Withdrawn') {
+          const patient = this.patientMap[this.editingEnrollment.patientID];
+          const patientUserID = patient?.userID;
+          if (patientUserID) {
+            const sp           = this.siteProtocolMap[this.editingEnrollment.siteProtocolID];
+            const protocolName = this.protocolMap[sp?.protocolID] ?? 'your trial';
+            const reason       = payload.withdrawalReason
+              ? ` Reason: ${payload.withdrawalReason}.`
+              : '';
+            this.http.post(`${environment.apiUrl}/notifications`, {
+              userID:   patientUserID,
+              message:  `You have been withdrawn from ${protocolName}.${reason} Please contact your investigator for further information.`,
+              category: 'Enrollment'
+            }).subscribe();
+          }
+        }
+
         this.editSuccess    = 'Enrollment updated successfully.';
         this.editSubmitting = false;
         setTimeout(() => this.closeEditModal(), 1200);

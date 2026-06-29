@@ -31,6 +31,7 @@ export class DashboardComponent {
   ) {
     this.user = this.auth.currentUser;
 
+    //change pass form
     this.cpForm = this.fb.group(
       {
         currentPassword: ['', Validators.required],

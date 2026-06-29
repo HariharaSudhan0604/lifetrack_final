@@ -25,6 +25,13 @@ public class SiteProtocolRepository : ISiteProtocolRepository
         return (items, total);
     }
 
+    public Task<bool> ExistsAsync(long protocolId, long siteId, long investigatorId, long? excludeId = null) =>
+        _db.SiteProtocols.AsNoTracking().AnyAsync(sp =>
+            sp.ProtocolID     == protocolId &&
+            sp.SiteID         == siteId &&
+            sp.InvestigatorID == investigatorId &&
+            (excludeId == null || sp.SiteProtocolID != excludeId.Value));
+
     public Task<bool> HasAssignmentsAsync(long siteId) =>
         _db.SiteProtocols.AsNoTracking().AnyAsync(sp => sp.SiteID == siteId);
 

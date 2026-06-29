@@ -70,8 +70,8 @@ public class DeviationService : IDeviationService
     {
         var d = await _repo.GetByIdAsync(id);
         if (d is null) return null;
-        if (d.Status == "Closed" && req.Status != "Closed")
-            throw new DomainException("A closed deviation cannot be reopened.");
+        if (req.Status == "Closed")
+            throw new DomainException("'Closed' is not a valid deviation status.");
         d.SiteProtocolID = req.SiteProtocolID;
         d.Description = req.Description;
         d.Severity = req.Severity;

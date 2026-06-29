@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { forkJoin, Subject } from 'rxjs';
@@ -57,10 +57,18 @@ export class InvestigatorDashboardComponent implements OnInit, OnDestroy {
   aesLoading = true;
 
   // ── Notifications ──────────────────────────────────────────────────────────
-  notifications:  any[] = [];
-  notifLoading  = true;
-  showNotifPanel = false;
+  notifications:    any[] = [];
+  notifLoading    = true;
+  showNotifPanel  = false;
+  notifPage       = 1;
+  readonly notifPageSize = 5;
+
   get unreadCount(): number { return this.notifications.filter(n => n.status === 'Unread').length; }
+  get notifTotalPages(): number { return Math.max(1, Math.ceil(this.notifications.length / this.notifPageSize)); }
+  get pagedNotifications(): any[] {
+    const start = (this.notifPage - 1) * this.notifPageSize;
+    return this.notifications.slice(start, start + this.notifPageSize);
+  }
 
   constructor(
     private auth: AuthService,
@@ -173,11 +181,14 @@ export class InvestigatorDashboardComponent implements OnInit, OnDestroy {
       .subscribe({ next: () => { n.status = 'Read'; } });
   }
 
+  navigateToNotifications(): void { this.router.navigate(['/dashboard/notifications']); }
+
   deleteNotification(n: any): void {
     this.http.delete(`${environment.apiUrl}/notifications/${n.notificationID}`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({ next: () => {
         this.notifications = this.notifications.filter((x: any) => x.notificationID !== n.notificationID);
+        if (this.notifPage > this.notifTotalPages) this.notifPage = this.notifTotalPages;
       }});
   }
 
@@ -266,3 +277,4 @@ export class InvestigatorDashboardComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 }
+

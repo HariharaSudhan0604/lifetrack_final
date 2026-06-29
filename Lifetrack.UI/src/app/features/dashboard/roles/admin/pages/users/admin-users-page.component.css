@@ -1,4 +1,4 @@
-/* ══════════════════════════════════════════════════════════════════════
+﻿/* ══════════════════════════════════════════════════════════════════════
    ADMIN — User management page
    Most patterns come from global styles.css. This file only defines
    the page-unique overrides (purple admin gradient, special row badges).
@@ -325,3 +325,21 @@ tr.self-row:hover { background: #f8fafc; }
   .sub-card { max-width: 100%; max-height: 96vh; border-radius: 12px; }
   .table-footer { justify-content: center; }
 }
+
+/* ── Uniform filter bar ──────────────────────────────────────────────────── */
+
+/* ── Uniform filter search bar ───────────────────────────────────────────── */
+.filter-search-wrap {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 10px;
+  border: 1.5px solid #e2e8f0; border-radius: 8px;
+  background: #fff; transition: border-color .15s;
+}
+.filter-search-wrap:focus-within { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
+.filter-search-icon { color: #9ca3af; display:flex; align-items:center; flex-shrink:0; }
+.filter-search {
+  border: none; outline: none;
+  font-size: 0.82rem; width: 200px; padding: 7px 0;
+  background: transparent; color: #1e293b;
+}
+.filter-search::placeholder { color: #94a3b8; }

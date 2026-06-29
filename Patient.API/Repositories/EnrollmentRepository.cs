@@ -13,11 +13,12 @@ public class EnrollmentRepository : IEnrollmentRepository
         _db.Enrollments.Include(e => e.Patient).FirstOrDefaultAsync(e => e.EnrollmentID == enrollmentId);
 
     public async Task<(IReadOnlyList<Enrollment> Items, int TotalCount)> ListAsync(
-        long? patientId, string? status, int page, int pageSize)
+        long? patientId, string? status, IReadOnlyList<long>? siteProtocolIds, int page, int pageSize)
     {
         var q = _db.Enrollments.AsNoTracking().AsQueryable();
         if (patientId.HasValue) q = q.Where(e => e.PatientID == patientId.Value);
         if (!string.IsNullOrEmpty(status)) q = q.Where(e => e.Status == status);
+        if (siteProtocolIds is { Count: > 0 }) q = q.Where(e => siteProtocolIds.Contains(e.SiteProtocolID));
         var total = await q.CountAsync();
         var items = await q.OrderByDescending(e => e.EnrollmentDate).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         return (items, total);

@@ -25,7 +25,8 @@ export class AdminSitesPageComponent implements OnInit, OnDestroy {
   filterStatus     = '';
   private searchTimer: any;
 
-  readonly statuses = ['Pending', 'Active', 'Suspended', 'Closed'];
+  readonly statuses     = ['Pending', 'Active', 'Suspended', 'Closed'];  // filter
+  readonly editStatuses = ['Active', 'Suspended', 'Closed'];             // edit modal only
 
   // ── Create modal ───────────────────────────────────────────────────────────
   showCreateModal  = false;
@@ -68,8 +69,8 @@ export class AdminSitesPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.createForm = this.fb.group({
       name:     ['', [Validators.required, Validators.maxLength(300)]],
-      location: ['', [Validators.required, Validators.maxLength(500)]],
-      status:   ['Pending', Validators.required]
+      location: ['', [Validators.required, Validators.maxLength(500)]]
+      // status is always 'Pending' for new sites — not shown in form
     });
 
     this.editForm = this.fb.group({
@@ -142,7 +143,7 @@ export class AdminSitesPageComponent implements OnInit, OnDestroy {
     this.createSubmitting = true; this.createError = '';
     const v = this.createForm.value;
     this.http.post(`${environment.apiUrl}/sites`, {
-      name: v.name.trim(), location: v.location.trim(), status: v.status
+      name: v.name.trim(), location: v.location.trim(), status: 'Pending'
     }).subscribe({
       next: () => {
         this.createSubmitting = false; this.createSuccess = true;

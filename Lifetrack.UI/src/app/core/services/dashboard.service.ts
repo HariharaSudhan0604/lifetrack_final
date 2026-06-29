@@ -13,7 +13,7 @@ export interface PagedResult<T> {
 
 /** Max wait per request before we give up and use a fallback. Prevents
  *  dashboards from being stuck on "loading" if one downstream service stalls. */
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 8000;    // 8 seconds — after this, treat as failed
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
@@ -24,7 +24,11 @@ export class DashboardService {
     const qs = new URLSearchParams({ page: '1', pageSize: '1', ...params });
     return this.http.get<PagedResult<unknown>>(`${this.api}/${resource}?${qs}`)
       .pipe(
+        // timeout(): if server doesn't respond in 8s, throws a TimeoutError
+        // Without this, a stalled microservice would make the dashboard hang forever
         timeout(REQUEST_TIMEOUT_MS),
+        // map(): transform the full PagedResult response to just the count we need
+        // r?.totalCount ?? 0 — null-safe: if response is malformed, default to 0
         map(r => r?.totalCount ?? 0),
         catchError(err => {
           console.error(`[Dashboard] count(${resource}) failed`, err);

@@ -72,8 +72,8 @@ public class AdverseEventService : IAdverseEventService
     {
         var ae = await _repo.GetByIdAsync(id);
         if (ae is null) return null;
-        if (ae.Status == "Closed" && req.Status != "Closed")
-            throw new DomainException("A closed adverse event cannot be reopened.");
+        if (req.Status == "Closed")
+            throw new DomainException("'Closed' is not a valid adverse event status.");
         ae.PatientID = req.PatientID;
         ae.ProtocolID = req.ProtocolID;
         ae.Description = req.Description;

@@ -32,8 +32,34 @@
 
 .pat-view-all-btn { padding: 3px 10px; font-size: 12px; font-weight: 500; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; color: #374151; transition: background 0.15s; white-space: nowrap; }
 .pat-view-all-btn:hover { background: #f9fafb; }
+
+/* ── Detail modals ────────────────────────────────────────────────────── */
+.pat-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 500; padding: 16px; }
+.pat-modal         { background: #fff; border-radius: 16px; width: 540px; max-width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.pat-modal-hdr     { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 14px; border-bottom: 1px solid #f1f5f9; position: sticky; top: 0; background: #fff; z-index: 1; }
+.pat-modal-title   { font-size: 17px; font-weight: 700; color: #111827; margin: 0; }
+.pat-modal-close   { background: none; border: none; font-size: 18px; cursor: pointer; color: #9ca3af; padding: 2px 6px; }
+.pat-modal-close:hover { color: #374151; }
+.pat-modal-body    { padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+.pat-detail-card   { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+.pat-detail-hdr    { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; background: #fff; }
+.pat-detail-proto  { font-size: 14px; font-weight: 700; color: #111827; }
+.pat-detail-grid   { display: flex; flex-direction: column; gap: 0; }
+.pat-detail-row    { display: flex; gap: 12px; padding: 9px 16px; border-bottom: 1px solid #f3f4f6; }
+.pat-detail-row:last-child { border-bottom: none; }
+.pat-detail-lbl    { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; width: 100px; flex-shrink: 0; padding-top: 2px; }
+.pat-detail-val    { font-size: 13.5px; color: #111827; }
 .notif-delete-btn { display:inline-flex; align-items:center; justify-content:center; margin-top:6px; margin-left:4px; padding:4px 6px; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; border-radius:5px; cursor:pointer; transition:all .15s; line-height:1; }
 .notif-delete-btn:hover { background:#fee2e2; border-color:#fca5a5; }
+.notif-hdr-right    { display:flex; align-items:center; gap:6px; }
+.notif-view-all-btn { padding:2px 8px; font-size:11px; font-weight:600; background:transparent; border:1px solid #e2e8f0; border-radius:5px; cursor:pointer; color:#475569; transition:all .15s; white-space:nowrap; }
+.notif-view-all-btn:hover { background:#f1f5f9; border-color:#cbd5e1; }
+.notif-pager      { display:flex; align-items:center; justify-content:center; gap:10px; padding:8px 12px; border-top:1px solid #f1f5f9; }
+.notif-pg-btn     { width:26px; height:26px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; font-size:14px; color:#374151; transition:all .15s; }
+.notif-pg-btn:hover:not(:disabled) { background:#f1f5f9; border-color:#cbd5e1; }
+.notif-pg-btn:disabled { opacity:0.35; cursor:default; }
+.notif-pg-info    { font-size:12px; color:#64748b; font-weight:500; }
 
 /* ── KPI Strip ────────────────────────────────────────────────────────── */
 .kpi-strip          { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }

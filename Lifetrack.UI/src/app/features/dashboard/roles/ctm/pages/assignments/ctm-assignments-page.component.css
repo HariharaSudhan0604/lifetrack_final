@@ -1,4 +1,4 @@
-/* ── Page Layout ── */
+﻿/* ── Page Layout ── */
 .page { padding: 28px 32px 40px; max-width: 1200px; margin: 0 auto; }
 
 .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
@@ -19,21 +19,13 @@
   border-radius: 10px; box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
   align-items: center;
 }
-.search-bar {
-  display: flex; align-items: center; background: #fff;
-  border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 0 12px;
-  gap: 8px; width: 320px; min-width: 180px;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.search-bar:focus-within { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139, 92, 246, .1); }
-.search-icon  { color: #94a3b8; flex-shrink: 0; line-height: 0; }
-.search-input {
-  flex: 1; border: none; outline: none; font-size: 13.5px;
-  font-family: inherit; color: #1e293b; padding: 9px 0; background: transparent;
-}
-.search-input::placeholder { color: #aab4c4; }
-.search-clear { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 13px; padding: 0; line-height: 1; }
-.search-clear:hover { color: #475569; }
+
+
+
+
+
+
+
 .filter-select {
   padding: 7px 32px 7px 12px; font-size: 13px; border: 1px solid #e2e8f0;
   border-radius: 7px; background: #fff; color: #0f172a;
@@ -173,7 +165,28 @@
   .page { padding: 20px 16px 32px; }
   .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   .filter-bar { flex-direction: column; align-items: stretch; }
-  .search-bar { width: 100%; min-width: unset; }
+  
   .form-row { grid-template-columns: 1fr; }
   .context-row { grid-template-columns: 1fr; }
 }
+
+/* ── Uniform filter bar ──────────────────────────────────────────────────── */
+
+/* ── Uniform filter search bar ───────────────────────────────────────────── */
+.filter-search-wrap {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 10px;
+  border: 1.5px solid #e2e8f0; border-radius: 8px;
+  background: #fff; transition: border-color .15s;
+}
+.filter-search-wrap:focus-within { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
+.filter-search-icon { color: #9ca3af; display:flex; align-items:center; flex-shrink:0; }
+.filter-search {
+  border: none; outline: none;
+  font-size: 0.82rem; width: 200px; padding: 7px 0;
+  background: transparent; color: #1e293b;
+}
+.filter-search::placeholder { color: #94a3b8; }
+/* ── Initiation date hint ───────────────────────────────────────────────── */
+.field-hint { display: block; margin-top: 4px; font-size: 11px; color: #94a3b8; }
+

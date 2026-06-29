@@ -17,12 +17,23 @@ public class EnrollmentsController : ControllerBase
     public async Task<ActionResult<PagedResult<EnrollmentResponse>>> List(
         [FromQuery] long? patientId,
         [FromQuery] string? status,
+        [FromQuery] string? siteProtocolIds,   // comma-separated: "3,7,12"
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
         if (page < 1) page = 1;
-        if (pageSize is <= 0 or > 200) pageSize = 20;
-        return Ok(await _svc.ListAsync(patientId, status, page, pageSize));
+        if (pageSize is <= 0 or > 500) pageSize = 20;
+
+        IReadOnlyList<long>? spIds = null;
+        if (!string.IsNullOrWhiteSpace(siteProtocolIds))
+        {
+            spIds = siteProtocolIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                   .Select(s => long.TryParse(s.Trim(), out var id) ? id : 0L)
+                                   .Where(id => id > 0)
+                                   .ToList();
+        }
+
+        return Ok(await _svc.ListAsync(patientId, status, spIds, page, pageSize));
     }
 
     [HttpGet("{id:long}")]

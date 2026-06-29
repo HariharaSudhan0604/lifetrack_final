@@ -3,8 +3,6 @@ import { CanActivate, ActivatedRouteSnapshot, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 /**
- * Guards feature routes by an allowed-roles list declared in route data.
- *
  * Usage in route config:
  *   {
  *     path: 'documents',
@@ -13,10 +11,7 @@ import { AuthService } from '../services/auth.service';
  *     data: { roles: ['ClinicalTrialManager', 'RegulatoryOfficer'], title: 'Documents' }
  *   }
  *
- * The role is read from the JWT payload (authoritative — backend signs it),
- * NOT from the cached user object in localStorage which a malicious user
- * could edit in DevTools to bypass this guard.
- *
+ * The role is read from the JWT payload, not localstorage to avoid 
  * Backend authorization is still the ultimate source of truth — this guard
  * just prevents the wrong UI from rendering for the wrong role.
  */
@@ -37,9 +32,6 @@ export class RoleGuard implements CanActivate {
     // No restriction declared → allow all authenticated users
     if (allowed.length === 0) return true;
 
-    // Read role from the signed JWT — tamper-proof source.
-    // Fall back to the cached user object only if the JWT has no role claim
-    // (shouldn't happen with the current backend, but defensive).
     const tokenRole = this.auth.getRoleFromToken();
     const userRole  = tokenRole ?? this.auth.currentUser?.role ?? '';
 

@@ -1,4 +1,4 @@
-<main class="page-root">
+﻿<main class="page-root">
 
   <!-- ── Page Header ────────────────────────────────────────────────────── -->
   <div class="page-header">
@@ -9,7 +9,13 @@
         <p class="page-sub">Schedule and record visits for your enrolled patients</p>
       </div>
     </div>
-    <button class="btn-primary" *ngIf="view === 'visits'" (click)="openAddModal()">+ Add Visit</button>
+    <button class="btn-primary"
+            *ngIf="view === 'visits'"
+            [disabled]="!canAddVisit"
+            [title]="canAddVisit ? 'Schedule a new visit' : 'Visits can only be added for Active, Screening or Enrolled patients'"
+            (click)="openAddModal()">
+      + Add Visit
+    </button>
   </div>
 
   <!-- ── Breadcrumb ─────────────────────────────────────────────────────── -->
@@ -221,12 +227,6 @@
         <span class="err-msg" *ngIf="af['visitDate'].invalid && af['visitDate'].touched">Visit date is required.</span>
       </div>
       <div class="form-group">
-        <label>Status <span class="req">*</span></label>
-        <select formControlName="status">
-          <option *ngFor="let s of visitStatuses" [value]="s">{{ s }}</option>
-        </select>
-      </div>
-      <div class="form-group">
         <label>Notes <span class="opt">(optional)</span></label>
         <textarea formControlName="notes" rows="3" placeholder="Observations, outcomes, or remarks…"
           [class.input-err]="af['notes'].invalid && af['notes'].touched"></textarea>
@@ -263,7 +263,7 @@
       <div class="form-group">
         <label>Status <span class="req">*</span></label>
         <select formControlName="status">
-          <option *ngFor="let s of visitStatuses" [value]="s">{{ s }}</option>
+          <option *ngFor="let s of availableEditStatuses" [value]="s">{{ s }}</option>
         </select>
       </div>
       <div class="form-group">
@@ -281,3 +281,4 @@
     </form>
   </div>
 </div>
+

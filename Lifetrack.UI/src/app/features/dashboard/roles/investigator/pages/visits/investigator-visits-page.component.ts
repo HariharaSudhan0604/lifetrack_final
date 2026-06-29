@@ -49,7 +49,10 @@ export class InvestigatorVisitsPageComponent implements OnInit {
   editError      = '';
   editSuccess    = '';
 
-  readonly visitStatuses = ['Scheduled', 'Completed', 'Missed', 'Cancelled'];
+  readonly visitStatuses = ['Scheduled', 'Completed', 'Missed', 'Cancelled']; // filter
+
+  // Dynamically computed when edit modal opens based on visit date
+  availableEditStatuses: string[] = ['Scheduled', 'Completed', 'Missed', 'Cancelled'];
 
   private uid: number | null = null;
 
@@ -65,7 +68,7 @@ export class InvestigatorVisitsPageComponent implements OnInit {
 
     this.addForm = this.fb.group({
       visitDate: ['', Validators.required],
-      status:    ['Scheduled', Validators.required],
+      // status always 'Scheduled' for new visits — not shown in form
       notes:     ['', Validators.maxLength(1000)]
     });
 
@@ -190,6 +193,12 @@ export class InvestigatorVisitsPageComponent implements OnInit {
   // ── Add Visit ──────────────────────────────────────────────────────────────
   get af() { return this.addForm.controls; }
 
+  /** Add Visit button is only enabled when the patient's enrollment status allows it */
+  get canAddVisit(): boolean {
+    const allowed = ['Active', 'Screening', 'Enrolled'];
+    return allowed.includes(this.selectedEnrollment?.status);
+  }
+
   openAddModal() {
     this.addForm.reset({ status: 'Scheduled' });
     this.addError   = '';
@@ -214,7 +223,7 @@ export class InvestigatorVisitsPageComponent implements OnInit {
     const payload = {
       enrollmentID: this.selectedEnrollment.enrollmentID,
       visitDate:    v.visitDate,
-      status:       v.status,
+      status:       'Scheduled',   // always Scheduled for new visits
       notes:        v.notes || ''
     };
 
@@ -258,10 +267,28 @@ export class InvestigatorVisitsPageComponent implements OnInit {
 
   openEditModal(visit: any) {
     this.editingVisit = visit;
+
+    // Determine which statuses are allowed based on visit date
+    const today     = new Date().toISOString().substring(0, 10);
+    const visitDate = visit.visitDate ? visit.visitDate.substring(0, 10) : '';
+    const isFuture  = visitDate > today;
+
+    // Future visits: only Scheduled or Cancelled allowed
+    // Today or past visits: all statuses allowed
+    this.availableEditStatuses = isFuture
+      ? ['Scheduled', 'Cancelled']
+      : ['Scheduled', 'Completed', 'Missed', 'Cancelled'];
+
+    // If current status is not in available list, reset to Scheduled
+    const currentStatus = visit.status ?? 'Scheduled';
+    const safeStatus = this.availableEditStatuses.includes(currentStatus)
+      ? currentStatus
+      : 'Scheduled';
+
     this.editForm.patchValue({
-      visitDate: visit.visitDate ? visit.visitDate.substring(0, 10) : '',
-      status:    visit.status ?? 'Scheduled',
-      notes:     visit.notes  ?? ''
+      visitDate: visitDate,
+      status:    safeStatus,
+      notes:     visit.notes ?? ''
     });
     this.editError   = '';
     this.editSuccess = '';

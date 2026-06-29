@@ -1,4 +1,4 @@
-<main class="page-root">
+﻿<main class="page-root">
 
   <!-- Header -->
   <div class="page-header">
@@ -20,13 +20,12 @@
 
   <!-- Filter Bar -->
   <div class="filter-bar" *ngIf="!loading">
-    <div class="search-bar">
-      <span class="search-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <div class="filter-search-wrap">
+      <span class="filter-search-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </span>
-      <input type="text" class="search-input" placeholder="Search patient, protocol or site…"
+      <input type="text" class="filter-search" placeholder="Search patient, protocol or site…"
         [value]="searchTerm" (input)="onSearch($any($event.target).value)" />
-      <button class="search-clear" *ngIf="searchTerm" (click)="onSearch('')" title="Clear">&#10005;</button>
     </div>
     <select class="filter-select" [value]="filterStatus" (change)="onStatusChange($any($event.target).value)">
       <option value="">All Statuses</option>
@@ -99,7 +98,7 @@
       <div class="form-group">
         <label>Status <span class="req">*</span></label>
         <select formControlName="status">
-          <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          <option *ngFor="let s of editStatuses" [value]="s">{{ s }}</option>
         </select>
       </div>
       <div class="form-group" *ngIf="editForm.get('status')?.value === 'Withdrawn'">
@@ -169,14 +168,6 @@
         <span class="err-msg" *ngIf="initiationDateErr(form)">{{ initiationDateErr(form) }}</span>
       </div>
 
-      <!-- Status -->
-      <div class="form-group">
-        <label>Status <span class="req">*</span></label>
-        <select formControlName="status">
-          <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
-        </select>
-      </div>
-
       <!-- Feedback -->
       <div class="alert-success" *ngIf="success">{{ success }}</div>
       <div class="alert-error"   *ngIf="error">{{ error }}</div>
@@ -191,3 +182,4 @@
     </form>
   </div>
 </div>
+

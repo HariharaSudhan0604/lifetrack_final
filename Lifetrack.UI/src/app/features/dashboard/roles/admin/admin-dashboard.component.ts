@@ -18,7 +18,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   today = new Date();
 
   // ── Dashboard stats ───────────────────────────────────────────────────────
-  users = 0; protocols = 0; activeProtocols = 0; patients = 0; sites = 0; activeSites = 0;
+  users = 0; protocols = 0; activeProtocols = 0; patients = 0; sites = 0; activeSites = 0; assignments = 0;
   recentAuditLogs: any[] = [];
   recentUsers: any[] = [];
   loading = true;
@@ -40,6 +40,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       patients:        this.ds.count('patients'),
       sites:           this.ds.count('sites'),
       activeSites:     this.ds.count('sites', { status: 'Active' }),
+      assignments:     this.ds.count('site-protocols'),
       recentAuditLogs: this.ds.list<any>('audit-logs'),
       recentUsers:     this.ds.list<any>('users'),
     }).pipe(takeUntil(this.destroy$)).subscribe(d => {
@@ -49,6 +50,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.patients        = d.patients;
       this.sites           = d.sites;
       this.activeSites     = d.activeSites;
+      this.assignments     = d.assignments;
       this.recentAuditLogs = d.recentAuditLogs;
       this.recentUsers     = (d.recentUsers ?? []).sort((a: any, b: any) => (b.userID ?? 0) - (a.userID ?? 0));
       this.loading         = false;

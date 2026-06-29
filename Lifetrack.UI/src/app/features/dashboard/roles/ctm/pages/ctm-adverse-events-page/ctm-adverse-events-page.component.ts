@@ -34,14 +34,17 @@ interface Patient {
   styleUrls: ['./ctm-adverse-events-page.component.css']
 })
 export class CtmAdverseEventsPageComponent implements OnInit {
-  adverseEvents: AdverseEvent[] = [];
-  filteredEvents: AdverseEvent[] = [];
-  protocolMap: { [id: number]: string } = {};
+  adverseEvents: AdverseEvent[] = [];   // full list from server
+  filteredEvents: AdverseEvent[] = [];  // filtered list for display  
+  protocolMap: { [id: number]: string } = {};   // protocolID → title lookup
   patientMap:  { [id: number]: string } = {};
 
+    // ── Loading/error state — UI feedback ──────────────────────────────────
   loading = false;
   error   = '';
   success = '';
+
+    // ── Filter state — drives the search/filter bar ───────────────────────
 
   selectedStatus   = '';
   selectedSeverity = '';
@@ -52,7 +55,8 @@ export class CtmAdverseEventsPageComponent implements OnInit {
   private readonly LS_KEY = 'escalated_ae_ids';
   escalatedAEIds = new Set<number>();
 
-  // ── Review modal ─────────────────────────────────────────────────────────
+  // ── Review modal   // ── Modal state — controls which modal is open ────────────────────────
+
   showReviewModal    = false;
   reviewAE: AdverseEvent | null = null;
   reviewStatus       = '';
@@ -61,7 +65,7 @@ export class CtmAdverseEventsPageComponent implements OnInit {
   reviewError        = '';
   showEscalateConfirm = false;
 
-  // ── Investigator: Report AE modal ────────────────────────────────────────
+  //Role flags ── Investigator: Report AE modal ────────────────────────────────────────
   isInvestigator      = false;
   isRegulatoryOfficer = false;
   isDataManager       = false;
@@ -106,7 +110,8 @@ export class CtmAdverseEventsPageComponent implements OnInit {
     this.loading = true;
     this.error   = '';
     const uid = this.authSvc.currentUser?.userID;
-
+    // forkJoin fires multiple GET requests IN PARALLEL and waits for ALL to complete
+  // Much faster than sequential requests — protocols + patients + events all load simultaneously
     forkJoin({
       protocols:     this.http.get<any>(`${environment.apiUrl}/protocols?pageSize=200`).pipe(catchError(() => of({ items: [] }))),
       patients:      this.http.get<any>(`${environment.apiUrl}/patients?pageSize=200`).pipe(catchError(() => of({ items: [] }))),
@@ -164,6 +169,9 @@ export class CtmAdverseEventsPageComponent implements OnInit {
   }
 
   applyFilter(): void {
+      // Derives a new filteredEvents array from local state
+  // Angular detects the new array reference and re-renders *ngFor automatically
+
     this.filteredEvents = this.adverseEvents.filter(ae => {
       const matchStatus   = !this.selectedStatus   || ae.status   === this.selectedStatus;
       const matchSeverity = !this.selectedSeverity || ae.severity === this.selectedSeverity;
@@ -196,7 +204,6 @@ export class CtmAdverseEventsPageComponent implements OnInit {
     if (status === 'Reported')     return 'badge-red';
     if (status === 'Under Review') return 'badge-amber';
     if (status === 'Resolved')     return 'badge-green';
-    if (status === 'Closed')       return 'badge-slate';
     return 'badge-slate';
   }
 
@@ -220,6 +227,9 @@ export class CtmAdverseEventsPageComponent implements OnInit {
     this.reviewSaving  = true;
     this.reviewError   = '';
     this.reviewSuccess = '';
+      
+    // Full replacement payload — PUT requires sending the complete resource
+    // (unlike PATCH which sends only changed fields)
 
     const payload = {
       patientID:    this.reviewAE.patientID,
@@ -229,7 +239,8 @@ export class CtmAdverseEventsPageComponent implements OnInit {
       status:       this.reviewStatus,
       reportedDate: this.reviewAE.reportedDate
     };
-
+  // http.put<void>(url, body) — <void> because this API returns 204 No Content
+  // The URL includes the resource ID: /adverse-events/42
     this.http.put<void>(`${environment.apiUrl}/adverse-events/${this.reviewAE.eventID}`, payload).subscribe({
       next: () => {
         const original = this.adverseEvents.find(ae => ae.eventID === this.reviewAE!.eventID);
@@ -285,7 +296,8 @@ export class CtmAdverseEventsPageComponent implements OnInit {
     if (!this.validateReportForm()) return;
     this.reportSubmitting = true;
     this.reportError      = '';
-
+  // Build the request body — plain JS object, Angular serializes it to JSON automatically
+  // + prefix converts string form values to numbers (all ngModel values are strings)
     const payload = {
       patientID:    +this.reportForm.patientID,
       protocolID:   +this.reportForm.protocolID,
